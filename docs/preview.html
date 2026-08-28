@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>FuelTech FT700 — Preview</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../html/style.css">
+  <style>
+    body { background: #0a0a12; display: flex; flex-direction: column; align-items: center; gap: 40px; padding: 40px; min-height: 100vh; }
+    h2 { font-family: 'Orbitron', monospace; color: #ff6600; letter-spacing: 3px; font-size: 13px; text-align: center; margin: 0; }
+    .section { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+
+    /* força visibilidade sem FiveM */
+    #speedometer { position: static !important; display: block !important; }
+    #wbo2-nano   { position: static !important; display: block !important; bottom: auto !important; }
+    #ecu-menu    { position: static !important; display: flex !important; background: transparent !important; }
+    #mt-badge    { position: static !important; display: flex !important; }
+    #drag-slip   { position: static !important; display: flex !important; }
+  </style>
+</head>
+<body>
+
+<h2>⬛ HUD — Velocímetro</h2>
+<div class="section">
+  <div id="wbo2-nano">
+    <div class="wbo2-bezel">
+      <div class="wbo2-brand">FuelTech</div>
+      <div class="wbo2-screen"><span class="wbo2-val stoic" id="wbo2Val">14.35</span></div>
+      <div class="wbo2-footer">WBØ2 NANO</div>
+    </div>
+  </div>
+
+  <div id="speedometer">
+    <div class="hud-bezel">
+      <div class="led-strip" id="ledStrip">
+        <div class="led" id="led0"></div><div class="led" id="led1"></div>
+        <div class="led" id="led2"></div><div class="led" id="led3"></div>
+        <div class="led" id="led4"></div><div class="led" id="led5"></div>
+        <div class="led" id="led6"></div><div class="led" id="led7"></div>
+        <div class="led" id="led8"></div><div class="led" id="led9"></div>
+        <div class="led" id="led10"></div><div class="led" id="led11"></div>
+      </div>
+      <div class="hud-body">
+        <div class="gauge-wrap">
+          <canvas id="rpmCanvas" width="160" height="160"></canvas>
+          <div class="gauge-center">
+            <div class="gauge-rpm-val" id="rpmVal">5840</div>
+            <div class="gauge-rpm-lbl">RPM</div>
+          </div>
+        </div>
+        <div class="right-panel">
+          <div class="data-row">
+            <div class="data-block">
+              <div class="data-lbl">KM/H</div>
+              <div class="data-big" id="speed">187</div>
+            </div>
+            <div class="data-block">
+              <div class="data-lbl">MARCHA</div>
+              <div class="data-gear" id="gear">4</div>
+            </div>
+          </div>
+          <div class="stats-grid">
+            <div class="sg-cell bg-amber"><div class="sg-lbl">T.MOTOR</div><div class="sg-val" id="tMotor">92.4</div></div>
+            <div class="sg-cell bg-green"><div class="sg-lbl">P.ÓLEO</div><div class="sg-val" id="pOleo">3.84</div></div>
+            <div class="sg-cell bg-dark"><div class="sg-lbl">LAMBDA</div><div class="sg-val sg-big" id="sGeral">0.97</div></div>
+            <div class="sg-cell bg-amber"><div class="sg-lbl">P.COMB</div><div class="sg-val" id="pComb">3.61</div></div>
+            <div class="sg-cell bg-amber"><div class="sg-lbl">T.AR</div><div class="sg-val" id="tAr">38.2</div></div>
+            <div class="sg-cell bg-dark"><div class="sg-lbl">MOTOR</div><div class="sg-val" id="motorHealth">98%</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="odo-bar">
+        <div class="odo-block"><span class="odo-lbl">ODO</span><span class="odo-val" id="odoTotal">00312.7</span></div>
+        <div class="odo-block"><span class="odo-lbl">TRIP</span><span class="odo-val" id="odoTrip">14.3</span></div>
+        <div class="fuel-wrap">
+          <span class="odo-lbl">TANQUE</span>
+          <div class="fuel-track"><div class="fuel-fill" id="tanqueFill" style="width:68%"></div></div>
+        </div>
+        <div class="odo-block"><span class="odo-lbl">ACELER</span><span class="odo-val" id="dataThrottle">73%</span></div>
+      </div>
+      <div class="alert-bar" id="alertBar"></div>
+      <div class="hud-footer">
+        <span class="ft-brand">FuelTech</span>
+        <span class="ft-model">FT700</span>
+        <span id="bankBadge" class="ft-bank bank-A">A</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<h2>⬛ ECU POPUP — Menu Principal (/ft)</h2>
+<div class="section" style="width:740px">
+  <div id="ecu-menu" style="position:static;background:transparent;">
+    <div class="ft700-device">
+      <div class="ft700-hdr">
+        <div class="ft700-led-strip" id="menuLedStrip">
+          <div class="mled" id="ml0"></div><div class="mled" id="ml1"></div>
+          <div class="mled" id="ml2"></div><div class="mled" id="ml3"></div>
+          <div class="mled" id="ml4"></div><div class="mled" id="ml5"></div>
+          <div class="mled" id="ml6"></div><div class="mled" id="ml7"></div>
+          <div class="mled" id="ml8"></div><div class="mled" id="ml9"></div>
+          <div class="mled" id="ml10"></div><div class="mled" id="ml11"></div>
+        </div>
+        <div class="ft700-brand">
+          <span class="ft700-name">FuelTech</span>
+          <span class="ft700-model-lbl">FT700</span>
+        </div>
+      </div>
+      <div class="ft700-mid">
+        <div class="ft700-side-leds">
+          <div class="sled" id="sl0"></div><div class="sled" id="sl1"></div>
+          <div class="sled" id="sl2"></div><div class="sled" id="sl3"></div>
+        </div>
+        <div class="ft700-lcd" id="lcdContent"></div>
+        <div class="ft700-side-leds">
+          <div class="sled" id="sr0"></div><div class="sled" id="sr1"></div>
+          <div class="sled" id="sr2"></div><div class="sled" id="sr3"></div>
+        </div>
+      </div>
+      <div class="ft700-ctrl">
+        <button class="ft700-btn btn-back">✗</button>
+        <button class="ft700-btn btn-menu">≡ MENU</button>
+        <button class="ft700-btn btn-ok">✓</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<h2>⬛ CÂMBIO MANUAL + DRAG TIMER</h2>
+<div class="section" style="display:flex;flex-direction:row;gap:40px;align-items:flex-start">
+  <div id="mt-badge">
+    <div class="mt-label">MANUAL</div>
+    <div class="mt-gear" id="mtGear">3</div>
+    <div class="mt-arrows">
+      <span class="mt-up active" id="mtUp">▲</span>
+      <span class="mt-dn" id="mtDn">▼</span>
+    </div>
+  </div>
+
+  <div id="drag-slip">
+    <div class="slip-inner">
+      <div class="slip-title">⏱ ET SLIP — 1/4 MILHA</div>
+      <div class="slip-row"><span class="slip-lbl">60 km/h</span><span class="slip-val">2.341s</span></div>
+      <div class="slip-row"><span class="slip-lbl">100 km/h</span><span class="slip-val">4.872s</span></div>
+      <div class="slip-row"><span class="slip-lbl">402 m (1/4)</span><span class="slip-val">11.203s</span></div>
+      <div class="slip-row slip-row-trap"><span class="slip-lbl">TRAP</span><span class="slip-val slip-trap">218 km/h</span></div>
+    </div>
+  </div>
+</div>
+
+<script src="../html/script.js"></script>
+<script>
+// Simula dados do FiveM para o preview
+const DEMO_RPM_NORM = 0.73;
+
+// Gauge
+targetRpmNorm = DEMO_RPM_NORM;
+
+// LEDs — acende 8 de 12 (laranja/vermelho)
+const hudLeds = Array.from({length:12}, (_,i) => document.getElementById('led'+i));
+const menuLeds = Array.from({length:12}, (_,i) => document.getElementById('ml'+i));
+hudLeds.forEach((led, i) => {
+  if (i < 9) {
+    let color, glow;
+    if (i < 5)      { color = '#00ee44'; glow = 'rgba(0,230,60,0.7)'; }
+    else if (i < 8) { color = '#ffaa00'; glow = 'rgba(255,170,0,0.7)'; }
+    else            { color = '#ff6600'; glow = 'rgba(255,102,0,0.8)'; }
+    led.style.background = color;
+    led.style.boxShadow  = `0 0 8px ${glow}`;
+    if (menuLeds[i]) { menuLeds[i].style.background = color; menuLeds[i].style.boxShadow = `0 0 8px ${glow}`; }
+  }
+});
+
+// Menu principal
+openMenu({
+  activeBank: 'A',
+  ignMapA: null, injMapA: null,
+  ignMapB: null, injMapB: null,
+  twoStepRPM: 4500, twoStepActive: false,
+  cutOffEnabled: true, delayCorteGiro: 300,
+  shiftLightRPM: 7200, boostPSI: 18,
+  boostRampRPM: 2800, boostActive: true,
+  revLimit: 8000, tractionSlip: 25, tractionEnabled: false,
+  closedLoopActive: false, closedLoopRate: 1,
+  alertDetonacao: true, alertBaixaComb: false,
+  alertBaixaOleo: true,  alertInjetor: false,
+  alertFaltaComb: false, alertExcessoComb: false,
+});
+</script>
+</body>
+</html>

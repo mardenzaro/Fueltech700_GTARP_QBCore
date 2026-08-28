@@ -1,1 +1,17 @@
+# Debug log
 ft_log.txt
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+*.sublime-workspace
+
+# FiveM cache
+stream/
+
+# Node
+node_modules/
+package-lock.json
