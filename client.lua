@@ -62,11 +62,15 @@ local boostActive     = false
 local tractionSlip    = 25
 local tractionEnabled = false
 local revLimit        = 8000
+local ftEnabled       = false   -- ativo somente após /ft on
 
 -- ── Top Speed ─────────────────────────────────────────────────────────────────
 local baseMaxFlatVel  = nil
 local baseDragCoeff   = nil
 local topSpeedDirty   = false
+local ftFlatVel       = nil   -- valor ativo de fInitialDriveMaxFlatVel (aplicado todo frame)
+local ftDragCoeff     = nil   -- valor ativo de fInitialDragCoeff (aplicado todo frame)
+local ftCleanupFrames = 0     -- frames restantes para restaurar drag após /ft off
 
 
 -- ── O2 Closed Loop ────────────────────────────────────────────────────────────
@@ -82,6 +86,7 @@ local airTemp     = 25.0
 local odometer    = 0.0
 local tripOdo     = 0.0
 local cutOffTimer = 0
+local ecuLoading  = false
 
 -- ── Shift / BOV ───────────────────────────────────────────────────────────────
 local lastGear = 0
@@ -98,6 +103,10 @@ RegisterCommand('mt', function()
     local veh = GetVehiclePedIsIn(PlayerPedId(), false)
     if veh == 0 then
         TriggerEvent('chat:addMessage', { args = {'FT700', 'Entre em um veículo primeiro.'} })
+        return
+    end
+    if not ftEnabled then
+        TriggerEvent('chat:addMessage', { args = {'FT700', 'Ative o FuelTech com /ft on primeiro.'} })
         return
     end
     manualActive = not manualActive
@@ -125,6 +134,67 @@ RegisterCommand('shiftdown', function()
         SendNUIMessage({ manualMode = true, manualGear = manualGear })
     end
 end, false)
+
+-- ── Gear lock thread — trava marcha todo frame quando câmbio manual ativo ─────
+CreateThread(function()
+    while true do
+        if manualActive then
+            local veh = GetVehiclePedIsIn(PlayerPedId(), false)
+            if veh ~= 0 then
+                SetVehicleCurrentGear(veh, manualGear)
+            end
+            Wait(0)
+        else
+            Wait(100)
+        end
+    end
+end)
+
+-- ── Thread de handling — aplica e restaura handling todo frame ───────────────
+CreateThread(function()
+    while true do
+        if ftEnabled and ftFlatVel then
+            local veh = GetVehiclePedIsIn(PlayerPedId(), false)
+            if veh ~= 0 then
+                SetVehicleHandlingFloat(veh, 'CHandlingData', 'fInitialDriveMaxFlatVel', ftFlatVel)
+                if ftDragCoeff then
+                    SetVehicleHandlingFloat(veh, 'CHandlingData', 'fInitialDragCoeff', ftDragCoeff)
+                end
+            end
+            Wait(0)
+        elseif ftCleanupFrames > 0 then
+            -- Restaura drag stock a cada frame por ~2s após /ft off
+            -- (necessário porque GTA não respeita SetVehicleHandlingFloat em chamada única)
+            local veh = GetVehiclePedIsIn(PlayerPedId(), false)
+            if veh ~= 0 then
+                if baseDragCoeff then
+                    SetVehicleHandlingFloat(veh, 'CHandlingData', 'fInitialDragCoeff', baseDragCoeff)
+                end
+                if baseMaxFlatVel then
+                    SetVehicleHandlingFloat(veh, 'CHandlingData', 'fInitialDriveMaxFlatVel', baseMaxFlatVel)
+                end
+            end
+            ftCleanupFrames = ftCleanupFrames - 1
+            -- Não chama SetVehicleMaxSpeed(0.0) ao final — cap stock de /ft off
+            -- permanece ativo até o próximo /ft on, evitando reset de estado do GTA
+            Wait(0)
+        else
+            Wait(100)
+        end
+    end
+end)
+
+-- ── Bloqueio de acelerador durante carregamento do ECU ───────────────────────
+CreateThread(function()
+    while true do
+        if ecuLoading and GetVehiclePedIsIn(PlayerPedId(), false) ~= 0 then
+            DisableControlAction(0, 71, true)  -- bloqueia acelerador
+            Wait(0)
+        else
+            Wait(100)
+        end
+    end
+end)
 
 -- ── Drag Timer ────────────────────────────────────────────────────────────────
 local dragActive    = false
@@ -178,7 +248,7 @@ local function calcPower(rpmVal, throttleVal)
         boostEff = 1.0 + ramp * boostBar * 0.55
     end
 
-    return math.max(0.3, math.min(6.0, ignEff * injEff * boostEff)), li, ri
+    return math.max(0.3, math.min(6.0, ignEff * injEff * boostEff * 1.10)), li, ri
 end
 
 -- ── Top Speed aplicador ───────────────────────────────────────────────────────
@@ -203,23 +273,17 @@ local function applyTopSpeed(vehicle)
     -- Fator 3: Boost (domina em carros turbo — 1.0 bar ≈ +55% potência)
     local boostBar    = boostTargetPSI / 14.504
     local boostFactor = boostActive and (1.0 + boostBar * 0.55) or 1.0
+    local baseECU     = 1.10  -- ganho base de mapeamento de ECU (sempre ativo com /ft on)
 
-    local topMult = math.max(0.5, math.min(4.0, revFactor * ignFactor * boostFactor))
+    local topMult = math.max(0.5, math.min(4.0, revFactor * ignFactor * boostFactor * baseECU))
 
-    -- 1) Handling: eleva o teto de velocidade do motor
-    SetVehicleHandlingFloat(vehicle, 'CHandlingData', 'fInitialDriveMaxFlatVel', baseMaxFlatVel * topMult)
-
-    -- 2) MaxSpeed: sobrepõe limite de marchas (em m/s)
-    local baseKmh = baseMaxFlatVel
-    if baseKmh < 80 then baseKmh = 180 end
+    -- Hard cap de velocidade via SetVehicleMaxSpeed (funciona como limite real no FiveM)
+    local baseKmh = baseMaxFlatVel >= 80 and baseMaxFlatVel or 180
     SetVehicleMaxSpeed(vehicle, (baseKmh * topMult) / 3.6)
 
-    -- 3) Drag: reduz arrasto aerodinâmico proporcionalmente ao boost
-    --    Sem boost → drag original. Com boost máximo → drag cai até 25% do original.
-    if baseDragCoeff then
-        local dragMult = math.max(0.25, 1.0 / topMult)
-        SetVehicleHandlingFloat(vehicle, 'CHandlingData', 'fDragCoeff', baseDragCoeff * dragMult)
-    end
+    -- Drag quase zero para o motor conseguir empurrar até o cap acima
+    ftFlatVel   = baseMaxFlatVel * topMult
+    ftDragCoeff = baseDragCoeff and math.max(0.3, baseDragCoeff / topMult) or nil
 end
 
 -- ── Fogo no escapamento ──────────────────────────────────────────────────────
@@ -252,40 +316,90 @@ local function spawnExhaustFire(veh)
 end
 
 -- ── /ft command ───────────────────────────────────────────────────────────────
-RegisterCommand('ft', function()
-    if GetVehiclePedIsIn(PlayerPedId(), false) == 0 then return end
-    SetNuiFocus(true, true)
-    SendNUIMessage({
-        showMenu = true,
-        ecuState = {
-            activeBank       = activeBank,
-            ignMapA          = banks.A.ign or DEF_IGN_3D,
-            injMapA          = banks.A.inj or DEF_INJ_3D,
-            ignMapB          = banks.B.ign or deepCopy(DEF_IGN_3D),
-            injMapB          = banks.B.inj or deepCopy(DEF_INJ_3D),
-            ignOffset        = ecuIgnOffset,
-            injOffset        = ecuInjOffset,
-            alertDetonacao   = alertDetonacao,
-            alertBaixaComb   = alertBaixaComb,
-            alertBaixaOleo   = alertBaixaOleo,
-            alertInjetor     = alertInjetor,
-            alertFaltaComb   = alertFaltaComb,
-            alertExcessoComb = alertExcessoComb,
-            twoStepRPM       = twoStepRPM,
-            twoStepActive    = twoStepActive,
-            cutOffEnabled    = cutOffEnabled,
-            delayCorteGiro   = delayCorteGiro,
-            shiftLightRPM    = shiftLightRPM,
-            boostPSI         = boostTargetPSI,
-            boostRampRPM     = boostRampRPM,
-            boostActive      = boostActive,
-            tractionSlip     = tractionSlip,
-            tractionEnabled  = tractionEnabled,
-            closedLoopActive = closedLoopActive,
-            closedLoopRate   = closedLoopRate,
-            revLimit         = revLimit,
-        }
-    })
+RegisterCommand('ft', function(source, args)
+    local sub = ((args and args[1]) or ''):lower()
+    local veh = GetVehiclePedIsIn(PlayerPedId(), false)
+
+    if sub == 'on' then
+        if veh == 0 then
+            TriggerEvent('chat:addMessage', { args = {'FT700', 'Entre em um veículo primeiro.'} })
+            return
+        end
+        -- Usa baseline guardado na entrada do veículo (não re-lê do GTA,
+        -- pois GetVehicleHandlingFloat pode retornar valor modificado da sessão anterior)
+        ftCleanupFrames = 0  -- cancela qualquer restauração pendente
+        ftEnabled       = true
+        SendNUIMessage({ show = true })
+        applyTopSpeed(veh)   -- aplica cap e drag imediatamente, sem esperar 100ms do loop
+        local flatBefore = math.floor(baseMaxFlatVel or 0)
+        local boostStr   = boostActive
+            and ('Boost: ~g~' .. boostTargetPSI .. ' PSI')
+            or  'Boost: ~y~OFF~w~ (use /ft menu)'
+        TriggerEvent('chat:addMessage', { args = {'FT700',
+            '~g~FuelTech ON~w~ | base=' .. flatBefore .. ' km/h | ' .. boostStr
+        } })
+
+    elseif sub == 'off' then
+        ftEnabled    = false
+        manualActive = false
+        SendNUIMessage({ show = false, manualMode = false })
+        if veh ~= 0 then
+            ftFlatVel   = nil
+            ftDragCoeff = nil
+            SetVehicleEnginePowerMultiplier(veh, 1.0)
+            SetVehicleEngineTorqueMultiplier(veh, 1.0)
+            -- Cap imediato no speed stock; thread de cleanup restaura drag por 2s e então remove o cap
+            if baseMaxFlatVel then
+                SetVehicleMaxSpeed(veh, baseMaxFlatVel / 3.6)
+            else
+                SetVehicleMaxSpeed(veh, 0.0)
+            end
+            ftCleanupFrames = 120  -- ~2s a 60fps para restaurar drag via thread
+        end
+        TriggerEvent('chat:addMessage', { args = {'FT700', '~r~FuelTech FT700 desativado.'} })
+
+    elseif sub == 'menu' then
+        if veh == 0 then return end
+        if not ftEnabled then
+            TriggerEvent('chat:addMessage', { args = {'FT700', 'Ative com /ft on primeiro.'} })
+            return
+        end
+        SetNuiFocus(true, true)
+        SendNUIMessage({
+            showMenu = true,
+            ecuState = {
+                activeBank       = activeBank,
+                ignMapA          = banks.A.ign or DEF_IGN_3D,
+                injMapA          = banks.A.inj or DEF_INJ_3D,
+                ignMapB          = banks.B.ign or deepCopy(DEF_IGN_3D),
+                injMapB          = banks.B.inj or deepCopy(DEF_INJ_3D),
+                ignOffset        = ecuIgnOffset,
+                injOffset        = ecuInjOffset,
+                alertDetonacao   = alertDetonacao,
+                alertBaixaComb   = alertBaixaComb,
+                alertBaixaOleo   = alertBaixaOleo,
+                alertInjetor     = alertInjetor,
+                alertFaltaComb   = alertFaltaComb,
+                alertExcessoComb = alertExcessoComb,
+                twoStepRPM       = twoStepRPM,
+                twoStepActive    = twoStepActive,
+                cutOffEnabled    = cutOffEnabled,
+                delayCorteGiro   = delayCorteGiro,
+                shiftLightRPM    = shiftLightRPM,
+                boostPSI         = boostTargetPSI,
+                boostRampRPM     = boostRampRPM,
+                boostActive      = boostActive,
+                tractionSlip     = tractionSlip,
+                tractionEnabled  = tractionEnabled,
+                closedLoopActive = closedLoopActive,
+                closedLoopRate   = closedLoopRate,
+                revLimit         = revLimit,
+            }
+        })
+
+    else
+        TriggerEvent('chat:addMessage', { args = {'FT700', 'Uso: /ft on  |  /ft off  |  /ft menu'} })
+    end
 end, false)
 
 -- ── NUI Callbacks ─────────────────────────────────────────────────────────────
@@ -352,7 +466,12 @@ end)
 
 -- ── Recebe configuração carregada do banco ────────────────────────────────────
 RegisterNetEvent('fueltech:ecuLoaded', function(settingsJson)
-    if not settingsJson then return end
+    ecuLoading = false
+    if not settingsJson then
+        TriggerEvent('chat:addMessage', { args = {'FT700', '~w~ECU: sem config salva — usando padrão'} })
+        return
+    end
+    TriggerEvent('chat:addMessage', { args = {'FT700', '~g~ECU carregada! Use /ft on para ativar.'} })
     local ok, data = pcall(json.decode, settingsJson)
     if not ok or not data then return end
 
@@ -378,6 +497,23 @@ RegisterNetEvent('fueltech:ecuLoaded', function(settingsJson)
 end)
 
 
+-- ── Limpeza ao reiniciar/parar o resource ────────────────────────────────────
+AddEventHandler('onResourceStop', function(resourceName)
+    if resourceName ~= GetCurrentResourceName() then return end
+    local veh = GetVehiclePedIsIn(PlayerPedId(), false)
+    if veh ~= 0 then
+        SetVehicleEnginePowerMultiplier(veh, 1.0)
+        SetVehicleEngineTorqueMultiplier(veh, 1.0)
+        if baseMaxFlatVel then
+            SetVehicleHandlingFloat(veh, 'CHandlingData', 'fInitialDriveMaxFlatVel', baseMaxFlatVel)
+        end
+        if baseDragCoeff then
+            SetVehicleHandlingFloat(veh, 'CHandlingData', 'fInitialDragCoeff', baseDragCoeff)
+        end
+        SetVehicleMaxSpeed(veh, 0.0)
+    end
+end)
+
 -- ── Main Loop ─────────────────────────────────────────────────────────────────
 CreateThread(function()
     StopGameplayCamShaking(true)
@@ -396,20 +532,29 @@ CreateThread(function()
                 cutOffTimer  = 0
                 clTimer      = 0
                 dragActive   = false
+                SetVehicleMaxSpeed(vehicle, 0.0)
                 baseMaxFlatVel  = GetVehicleHandlingFloat(vehicle, 'CHandlingData', 'fInitialDriveMaxFlatVel')
-                baseDragCoeff   = GetVehicleHandlingFloat(vehicle, 'CHandlingData', 'fDragCoeff')
+                baseDragCoeff   = GetVehicleHandlingFloat(vehicle, 'CHandlingData', 'fInitialDragCoeff')
                 topSpeedDirty   = true
                 StopGameplayCamShaking(true)
-                SendNUIMessage({ show = true })
-                -- Carrega configuração do banco para este modelo de veículo
-                local model = GetEntityModel(vehicle)
+                if ftEnabled then SendNUIMessage({ show = true }) end
+                -- Carrega ECU do banco — bloqueia acelerador até receber resposta
+                ecuLoading = true
+                TriggerEvent('chat:addMessage', { args = {'FT700', '~y~Carregando ECU...'} })
                 TriggerServerEvent('fueltech:loadECU', GetEntityModel(vehicle))
                 RequestNamedPtfxAsset("core")
+                -- Timeout: libera após 3 s mesmo sem resposta do servidor
+                CreateThread(function()
+                    Wait(3000)
+                    if ecuLoading then
+                        ecuLoading = false
+                        TriggerEvent('chat:addMessage', { args = {'FT700', '~w~ECU: sem config salva — usando padrão'} })
+                    end
+                end)
             end
 
-            if topSpeedDirty then
+            if ftEnabled then
                 applyTopSpeed(vehicle)
-                topSpeedDirty = false
             end
 
             local speed        = GetEntitySpeed(vehicle) * 3.6
@@ -483,13 +628,20 @@ CreateThread(function()
             local trackGear = manualActive and manualGear or gear
             if trackGear ~= lastGear and trackGear > 0 and lastGear > 0 and throttle > 0.5 then
                 spawnExhaustFire(vehicle)
-                -- BOV só na subida de marcha (upshift)
-                if boostActive and trackGear > lastGear then
+                -- BOV só na subida de marcha (upshift) e com FuelTech ativo
+                if ftEnabled and boostActive and trackGear > lastGear then
                     bovTimer = 280
                     SendNUIMessage({ turboBOV = true })
                 end
             end
             lastGear = trackGear
+
+            -- ── Sem FuelTech: restaura stock e pula efeitos de ECU ─────────
+            if not ftEnabled then
+                SetVehicleEnginePowerMultiplier(vehicle, 1.0)
+                SetVehicleEngineTorqueMultiplier(vehicle, 1.0)
+                goto ftDisabled
+            end
 
             -- ── O2 Closed Loop ────────────────────────────────────────────────
             if closedLoopActive and isEngOn and throttle > 0.1 then
@@ -597,9 +749,6 @@ CreateThread(function()
             local shiftLight = rpmVal >= shiftLightRPM
 
             local spoolPct = 0.0
-            if boostActive and boostTargetPSI >= 5 and rpmVal >= 500 then
-                spoolPct = math.max(0.0, math.min(1.0, (rpmVal - 500) / math.max(1, boostRampRPM - 500)))
-            end
 
             -- ── Alerts ────────────────────────────────────────────────────────
             local alerts = {}
@@ -642,23 +791,28 @@ CreateThread(function()
                 manualMode   = manualActive,
                 manualGear   = manualActive and manualGear or nil,
             })
+
+            ::ftDisabled::
         else
             if isInVehicle then
                 isInVehicle = false
+                ecuLoading  = false
                 cutOffTimer = 0
                 clTimer     = 0
                 dragActive  = false
                 wasTwoStep  = false
                 if lastVehicle ~= 0 then
+                    ftFlatVel   = nil
+                    ftDragCoeff = nil
                     SetVehicleEnginePowerMultiplier(lastVehicle, 1.0)
                     SetVehicleEngineTorqueMultiplier(lastVehicle, 1.0)
                     if baseMaxFlatVel then
                         SetVehicleHandlingFloat(lastVehicle, 'CHandlingData', 'fInitialDriveMaxFlatVel', baseMaxFlatVel)
-                        SetVehicleMaxSpeed(lastVehicle, 0.0)
                     end
                     if baseDragCoeff then
-                        SetVehicleHandlingFloat(lastVehicle, 'CHandlingData', 'fDragCoeff', baseDragCoeff)
+                        SetVehicleHandlingFloat(lastVehicle, 'CHandlingData', 'fInitialDragCoeff', baseDragCoeff)
                     end
+                    SetVehicleMaxSpeed(lastVehicle, 0.0)
                 end
                 baseMaxFlatVel  = nil
                 baseDragCoeff   = nil
