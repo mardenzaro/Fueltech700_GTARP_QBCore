@@ -39,6 +39,27 @@ const $alertBar    = document.getElementById('alertBar');
 const $lcdContent  = document.getElementById('lcdContent');
 const $bankBadge   = document.getElementById('bankBadge');
 
+// ── Mini gauge canvas refs (new layout) ──────────────────────────────────────
+const $gaugeFuel = document.getElementById('gaugeFuel');
+const $gaugeRpm  = document.getElementById('gaugeRpm');
+const $gaugeTemp = document.getElementById('gaugeTemp');
+const $gaugeOil  = document.getElementById('gaugeOil');
+const $lamGauge  = document.getElementById('lambdaGauge');
+
+const ctxFuel = $gaugeFuel ? $gaugeFuel.getContext('2d') : null;
+const ctxGRpm = $gaugeRpm  ? $gaugeRpm.getContext('2d')  : null;
+const ctxGTmp = $gaugeTemp ? $gaugeTemp.getContext('2d') : null;
+const ctxGOil = $gaugeOil  ? $gaugeOil.getContext('2d')  : null;
+const ctxLam  = $lamGauge  ? $lamGauge.getContext('2d')  : null;
+
+const miniGS = {
+  fuel: { t: 0,   v: 0   },
+  rpm:  { t: 0,   v: 0   },
+  temp: { t: 0,   v: 0   },
+  oil:  { t: 0,   v: 0   },
+  lam:  { t: 0.5, v: 0.5 },
+};
+
 // ── Canvas RPM Gauge ──────────────────────────────────────────────────────────
 const canvas  = document.getElementById('rpmCanvas');
 const ctx     = canvas.getContext('2d');
@@ -96,6 +117,163 @@ function animateGauge() {
   requestAnimationFrame(animateGauge);
 }
 animateGauge();
+
+// ── Mini needle gauge draw ────────────────────────────────────────────────────
+function drawMiniGauge(ctx, w, h, norm, arcColor) {
+  if (!ctx) return;
+  const cx = w * 0.5;
+  const cy = h - 3;
+  const r  = Math.min(cx - 4, h - 7);
+  const n  = Math.max(0, Math.min(1, norm));
+
+  ctx.clearRect(0, 0, w, h);
+
+  // Track
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, Math.PI, Math.PI * 2);
+  ctx.strokeStyle = '#1e2030';
+  ctx.lineWidth = 5;
+  ctx.lineCap = 'butt';
+  ctx.stroke();
+
+  // Fill arc
+  if (n > 0.01) {
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, Math.PI, Math.PI + Math.PI * n);
+    ctx.strokeStyle = n > 0.88 ? '#ff2200' : arcColor;
+    ctx.lineWidth = 5;
+    ctx.lineCap = 'butt';
+    ctx.stroke();
+  }
+
+  // 5 tick marks
+  for (let i = 0; i <= 4; i++) {
+    const ang = Math.PI + (Math.PI * i / 4);
+    ctx.beginPath();
+    ctx.moveTo(cx + (r - 6) * Math.cos(ang), cy + (r - 6) * Math.sin(ang));
+    ctx.lineTo(cx + (r + 1) * Math.cos(ang), cy + (r + 1) * Math.sin(ang));
+    ctx.strokeStyle = '#2e3248';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+  }
+
+  // Needle
+  const na = Math.PI + Math.PI * n;
+  ctx.beginPath();
+  ctx.moveTo(cx, cy);
+  ctx.lineTo(cx + (r - 3) * Math.cos(na), cy + (r - 3) * Math.sin(na));
+  ctx.strokeStyle = '#e8eaf8';
+  ctx.lineWidth = 1.5;
+  ctx.lineCap = 'round';
+  ctx.stroke();
+
+  // Center pivot
+  ctx.beginPath();
+  ctx.arc(cx, cy, 2.5, 0, Math.PI * 2);
+  ctx.fillStyle = '#ff6600';
+  ctx.fill();
+}
+
+// ── Lambda arc gauge draw ─────────────────────────────────────────────────────
+function drawLambdaGauge(norm) {
+  if (!ctxLam || !$lamGauge) return;
+  const w  = $lamGauge.width;
+  const h  = $lamGauge.height;
+  const cx = w * 0.5;
+  const cy = h - 4;
+  const r  = Math.min(cx - 6, h - 10);
+  const n  = Math.max(0, Math.min(1, norm));
+
+  ctxLam.clearRect(0, 0, w, h);
+
+  // Outer ring glow
+  ctxLam.beginPath();
+  ctxLam.arc(cx, cy, r + 2, Math.PI, Math.PI * 2);
+  ctxLam.strokeStyle = '#0e1020';
+  ctxLam.lineWidth = 1;
+  ctxLam.stroke();
+
+  // Track
+  ctxLam.beginPath();
+  ctxLam.arc(cx, cy, r, Math.PI, Math.PI * 2);
+  ctxLam.strokeStyle = '#151820';
+  ctxLam.lineWidth = 8;
+  ctxLam.lineCap = 'butt';
+  ctxLam.stroke();
+
+  // Color: rich (blue) → stoich (green) → lean (red)
+  let arcColor;
+  if (n < 0.42)      arcColor = '#4488ff';
+  else if (n < 0.58) arcColor = '#00e676';
+  else               arcColor = '#ff3300';
+
+  if (n > 0.01) {
+    ctxLam.beginPath();
+    ctxLam.arc(cx, cy, r, Math.PI, Math.PI + Math.PI * n);
+    ctxLam.strokeStyle = arcColor;
+    ctxLam.lineWidth = 8;
+    ctxLam.lineCap = 'round';
+    ctxLam.stroke();
+  }
+
+  // 5 tick marks
+  for (let i = 0; i <= 4; i++) {
+    const ang = Math.PI + (Math.PI * i / 4);
+    ctxLam.beginPath();
+    ctxLam.moveTo(cx + (r - 10) * Math.cos(ang), cy + (r - 10) * Math.sin(ang));
+    ctxLam.lineTo(cx + (r + 2)  * Math.cos(ang), cy + (r + 2)  * Math.sin(ang));
+    ctxLam.strokeStyle = '#2a2e48';
+    ctxLam.lineWidth = 1.5;
+    ctxLam.stroke();
+  }
+
+  // Stoich line at center (norm=0.5)
+  const stoichAng = Math.PI + Math.PI * 0.5;
+  ctxLam.beginPath();
+  ctxLam.moveTo(cx + (r - 14) * Math.cos(stoichAng), cy + (r - 14) * Math.sin(stoichAng));
+  ctxLam.lineTo(cx + (r + 4)  * Math.cos(stoichAng), cy + (r + 4)  * Math.sin(stoichAng));
+  ctxLam.strokeStyle = 'rgba(0,230,118,0.45)';
+  ctxLam.lineWidth = 1.5;
+  ctxLam.stroke();
+
+  // Needle
+  const na = Math.PI + Math.PI * n;
+  ctxLam.beginPath();
+  ctxLam.moveTo(cx, cy);
+  ctxLam.lineTo(cx + (r - 6) * Math.cos(na), cy + (r - 6) * Math.sin(na));
+  ctxLam.strokeStyle = '#ffffff';
+  ctxLam.lineWidth = 2;
+  ctxLam.lineCap = 'round';
+  ctxLam.stroke();
+
+  // Center pivot
+  ctxLam.beginPath();
+  ctxLam.arc(cx, cy, 3.5, 0, Math.PI * 2);
+  ctxLam.fillStyle = arcColor;
+  ctxLam.fill();
+}
+
+// ── Mini gauge animation loop ─────────────────────────────────────────────────
+const MINI_LERP = 0.14;
+
+function animateMiniGauges() {
+  const s = miniGS;
+
+  s.fuel.v += (s.fuel.t - s.fuel.v) * MINI_LERP;
+  s.rpm.v  += (s.rpm.t  - s.rpm.v)  * MINI_LERP;
+  s.temp.v += (s.temp.t - s.temp.v) * MINI_LERP;
+  s.oil.v  += (s.oil.t  - s.oil.v)  * MINI_LERP;
+  s.lam.v  += (s.lam.t  - s.lam.v)  * MINI_LERP;
+
+  drawMiniGauge(ctxFuel, 58, 44, s.fuel.v, '#00cc55');
+  drawMiniGauge(ctxGRpm, 58, 44, s.rpm.v,  '#ff6600');
+  drawMiniGauge(ctxGTmp, 58, 44, s.temp.v, '#ffaa00');
+  drawMiniGauge(ctxGOil, 58, 44, s.oil.v,  '#00aaff');
+  drawLambdaGauge(s.lam.v);
+
+  requestAnimationFrame(animateMiniGauges);
+}
+animateMiniGauges();
 
 // ── LEDs ──────────────────────────────────────────────────────────────────────
 const hudLeds   = Array.from({length:12}, (_,i) => document.getElementById('led'+i));
@@ -266,6 +444,13 @@ function updateHUD(d) {
 
   // WBO2 Nano — AFR display (lambda × 14.7)
   updateWBO2(parseFloat(d.lambda ?? '1.00'));
+
+  // ── Mini gauge targets ───────────────────────────────────────────────────
+  miniGS.fuel.t = (d.fuel ?? 0) / 100;
+  miniGS.rpm.t  = rpmNorm;
+  miniGS.temp.t = Math.max(0, Math.min(1, (parseFloat(d.oilTemp ?? 20) - 50) / 80));
+  miniGS.oil.t  = Math.max(0, Math.min(1, parseFloat(d.oilPressure ?? 0) / 10));
+  miniGS.lam.t  = Math.max(0, Math.min(1, (parseFloat(d.lambda ?? '1.0') - 0.7) / 0.6));
 
   updateTurboAudio(d.boostOn, d.spoolPct ?? 0, d.boostPSI ?? 0);
 
@@ -1036,13 +1221,17 @@ function updateMTBadge(active, gear, dir) {
 
   if (!badge) return;
 
+  const $clMT = document.getElementById('clManualTxt');
+
   if (!_mtActive) {
     badge.style.display = 'none';
     if ($gear) { $gear.style.color = ''; $gear.style.textShadow = ''; }
+    if ($clMT) $clMT.style.display = 'none';
     return;
   }
 
   badge.style.display = 'flex';
+  if ($clMT) $clMT.style.display = 'inline';
   if ($gear) {
     $gear.style.color      = '#00e676';
     $gear.style.textShadow = '0 0 10px rgba(0,230,118,0.6)';

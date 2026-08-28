@@ -8,7 +8,7 @@ body {
 }
 
 /* ══════════════════════════════════════
-   HUD SPEEDOMETER
+   HUD SPEEDOMETER — NEW FT450-STYLE LAYOUT
 ══════════════════════════════════════ */
 
 #speedometer {
@@ -20,225 +20,338 @@ body {
   filter: drop-shadow(0 8px 40px rgba(0,0,0,0.97));
 }
 
-.hud-bezel {
-  background: radial-gradient(ellipse at 30% 20%, #252830 0%, #14161e 50%, #0a0c14 100%);
-  border-radius: 14px;
-  border: 2px solid #2e3040;
-  padding: 0;
-  overflow: hidden;
-  box-shadow:
-    inset 0 2px 4px rgba(255,255,255,0.05),
-    inset 0 -2px 5px rgba(0,0,0,0.5),
-    0 0 0 1px #060608,
-    0 14px 50px rgba(0,0,0,0.95);
+/* Root wrapper */
+.hud-root {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
   width: 380px;
 }
 
-/* ── LED Strip ── */
+/* ── LED shift strip (full width) ── */
 .led-strip {
   display: flex;
   justify-content: space-between;
-  padding: 5px 10px 4px;
-  background: #090b12;
-  border-bottom: 1px solid #14161e;
-  gap: 4px;
+  padding: 5px 8px 4px;
+  background: #07080e;
+  border-radius: 10px 10px 0 0;
+  border: 1px solid #14161e;
+  border-bottom: none;
+  gap: 3px;
 }
 
 .led {
   flex: 1;
-  height: 10px;
+  height: 9px;
   border-radius: 3px;
   background: #111318;
   border: 1px solid #1a1e28;
   transition: background 0.05s, box-shadow 0.05s;
 }
 
-/* ── HUD body ── */
+/* ── HUD body: cluster panel + FT device ── */
 .hud-body {
   display: flex;
   gap: 0;
-  background: #090b12;
-  padding: 8px 8px 6px;
-  border-bottom: 1px solid #13151e;
+  background: #07080e;
+  border: 1px solid #14161e;
+  border-bottom: none;
+  overflow: hidden;
 }
 
-/* ── Round RPM Gauge ── */
-.gauge-wrap {
-  position: relative;
-  width: 160px;
-  height: 160px;
-  flex-shrink: 0;
+/* ════════════════════════════
+   LEFT: Analog Cluster Panel
+════════════════════════════ */
+.cluster-panel {
+  flex: 1;
+  background: radial-gradient(ellipse at 35% 25%, #1c1e28 0%, #0e0f18 55%, #080910 100%);
+  padding: 8px 8px 6px 8px;
+  border-right: 1px solid #1a1c28;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
 }
 
-#rpmCanvas { display: block; }
-
-.gauge-center {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  text-align: center;
-  pointer-events: none;
+/* 4 mini needle gauges */
+.gauges-row {
+  display: flex;
+  gap: 4px;
+  justify-content: space-between;
 }
 
-.gauge-rpm-val {
+.mini-gwrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+}
+
+.mini-canvas {
+  display: block;
+}
+
+.mini-glabels {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  padding: 0 1px;
+}
+
+.mini-glabels span {
+  font-size: 7px;
+  color: #303548;
+  letter-spacing: 0.5px;
+}
+
+.mini-gtitle {
+  font-family: 'Orbitron', monospace;
+  font-size: 6px !important;
+  color: #404868 !important;
+  letter-spacing: 1px !important;
+  text-transform: uppercase;
+}
+
+/* Gear / MANUAL row */
+.cluster-gear-row {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 1px 2px 0;
+}
+
+.cluster-manual-txt {
+  font-family: 'Orbitron', monospace;
+  font-size: 8px;
+  font-weight: 700;
+  color: #00e676;
+  letter-spacing: 2px;
+  display: none;
+}
+
+.cluster-gear {
   font-family: 'Orbitron', monospace;
   font-size: 22px;
+  font-weight: 900;
+  color: #c0c8e0;
+  line-height: 1;
+  transition: color 0.15s, text-shadow 0.15s;
+}
+
+/* Large speed number */
+.cluster-speed-row {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  padding: 0 2px;
+  line-height: 1;
+}
+
+.cluster-spd {
+  font-family: 'Orbitron', monospace;
+  font-size: 54px;
+  font-weight: 900;
+  color: #ffffff;
+  line-height: 1;
+  letter-spacing: -3px;
+}
+
+.cluster-spd-unit {
+  font-family: 'Orbitron', monospace;
+  font-size: 9px;
+  color: #404868;
+  letter-spacing: 2px;
+  padding-bottom: 4px;
+}
+
+/* Bottom row: green C circle + odo */
+.cluster-bot {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 2px 2px 0;
+}
+
+.c-circle {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid #00e676;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Orbitron', monospace;
+  font-size: 8px;
+  font-weight: 900;
+  color: #00e676;
+  flex-shrink: 0;
+  box-shadow: 0 0 6px rgba(0,230,118,0.3);
+}
+
+.cluster-odo {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 11px;
+  color: #7080a0;
+  letter-spacing: 1px;
+}
+
+/* Hidden elements that script.js references */
+.hud-hidden-canvas {
+  position: absolute;
+  left: -9999px;
+  top: -9999px;
+  visibility: hidden;
+}
+
+.hud-hidden-val {
+  display: none;
+}
+
+/* ════════════════════════════
+   RIGHT: FT700 Physical Device
+════════════════════════════ */
+.ft-device {
+  width: 116px;
+  flex-shrink: 0;
+  background: #0a0a0c;
+  display: flex;
+  flex-direction: column;
+  border-left: 1px solid #1e1e22;
+}
+
+/* Device header: brand + bank badge */
+.ftd-hdr {
+  background: #0c0c10;
+  border-bottom: 1px solid #1a1a20;
+  padding: 5px 7px 4px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.ftd-brand {
+  font-family: 'Orbitron', monospace;
+  font-size: 10px;
+  font-weight: 900;
+  color: #ff4400;
+  font-style: italic;
+  letter-spacing: 1px;
+}
+
+/* Lambda gauge screen */
+.ftd-screen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 5px 4px 0;
+  background: #080810;
+  border-bottom: 1px solid #141418;
+}
+
+#lambdaGauge {
+  display: block;
+}
+
+.ftd-lam-overlay {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: -6px;
+}
+
+.ftd-lam-val {
+  font-family: 'Orbitron', monospace;
+  font-size: 17px;
   font-weight: 900;
   color: #ffffff;
   line-height: 1;
   letter-spacing: -1px;
 }
 
-.gauge-rpm-lbl {
+.ftd-lam-unit {
   font-size: 7px;
-  color: #404860;
-  letter-spacing: 2px;
-  margin-top: 2px;
+  color: #404868;
+  letter-spacing: 1px;
+  margin-top: 1px;
+  margin-bottom: 3px;
 }
 
-/* ── Right panel ── */
-.right-panel {
+/* Efficiency row */
+.ftd-eff {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 3px;
+  padding: 3px 4px;
+  background: #0a0a0e;
+  border-bottom: 1px solid #141418;
+}
+
+.ftd-eff-val {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 13px;
+  color: #9098b8;
+}
+
+.ftd-eff-unit {
+  font-size: 8px;
+  color: #303548;
+  letter-spacing: 1px;
+}
+
+/* Bottom 3-cell data bar */
+.ftd-cells {
+  display: flex;
   flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  padding-left: 8px;
+  border-bottom: 1px solid #141418;
 }
 
-.data-row {
-  display: flex;
-  gap: 6px;
-  align-items: flex-end;
-}
-
-.data-block {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-
-.data-lbl {
-  font-size: 7px;
-  color: #404870;
-  letter-spacing: 1.5px;
-  text-transform: uppercase;
-  margin-bottom: 2px;
-}
-
-.data-big {
-  font-family: 'Orbitron', monospace;
-  font-size: 44px;
-  font-weight: 900;
-  color: #ffffff;
-  line-height: 1;
-  letter-spacing: -2px;
-}
-
-.data-gear {
-  font-family: 'Orbitron', monospace;
-  font-size: 44px;
-  font-weight: 900;
-  color: #ffffff;
-  line-height: 1;
-}
-
-/* ── Stats grid 2×3 ── */
-.stats-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 2px;
-}
-
-.sg-cell {
+.ftd-cell {
+  flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 3px 2px;
-  border-radius: 2px;
+  padding: 4px 2px;
+  border-right: 1px solid #141418;
+  background: #07070b;
 }
 
-.sg-lbl {
+.ftd-cell:last-child {
+  border-right: none;
+}
+
+.ftd-clbl {
   font-size: 6px;
-  color: rgba(255,255,255,0.45);
+  color: #30364e;
   letter-spacing: 0.5px;
   text-transform: uppercase;
   white-space: nowrap;
+  margin-bottom: 2px;
 }
 
-.sg-val {
-  font-family: 'Share Tech Mono', monospace;
-  font-size: 11px;
-  color: #ffffff;
-  line-height: 1.2;
-}
-
-.sg-big {
+.ftd-cval {
   font-family: 'Orbitron', monospace;
-  font-size: 14px;
+  font-size: 10px;
   font-weight: 700;
+  color: #c8d0e8;
+  line-height: 1;
 }
 
-.bg-amber { background: #261800; }
-.bg-green { background: #062808; }
-.bg-dark  { background: #0a0c16; }
-
-/* ── Odo bar ── */
-.odo-bar {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 4px 10px;
-  background: #07080f;
-  border-bottom: 1px solid #0e1018;
+/* Model footer */
+.ftd-footer {
+  font-family: 'Orbitron', monospace;
+  font-size: 9px;
+  font-weight: 900;
+  color: #282e40;
+  letter-spacing: 3px;
+  text-align: center;
+  padding: 4px 4px 5px;
+  background: #07070b;
 }
 
-.odo-block {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-
-.odo-lbl {
-  font-size: 6px;
-  color: #28303e;
-  letter-spacing: 1px;
-  text-transform: uppercase;
-}
-
-.odo-val {
-  font-size: 11px;
-  color: #9098b8;
-  letter-spacing: 0.5px;
-  line-height: 1.2;
-}
-
-.fuel-wrap {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
-}
-
-.fuel-track {
-  width: 100%;
-  height: 8px;
-  background: #101420;
-  border-radius: 2px;
-  overflow: hidden;
-  border: 1px solid #1a1e2e;
-}
-
-.fuel-fill {
-  height: 100%;
-  width: 100%;
-  background: linear-gradient(to right, #00bb44, #00ee66);
-  transition: width 0.5s ease, background 0.5s ease;
-}
-
-/* ── Alert bar ── */
+/* ── Alert bar (full width) ── */
 .alert-bar {
   min-height: 0;
   max-height: 18px;
@@ -250,6 +363,9 @@ body {
   text-align: center;
   padding: 0 8px;
   line-height: 18px;
+  border: 1px solid #14161e;
+  border-top: none;
+  border-radius: 0 0 8px 8px;
   transition: max-height 0.2s;
   animation: alertblink 0.9s ease-in-out infinite alternate;
 }
@@ -259,31 +375,27 @@ body {
   100% { opacity: 0.35; }
 }
 
-/* ── HUD footer ── */
-.hud-footer {
-  background: #07080f;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 3px 10px;
-  border-top: 1px solid #1a1400;
-}
-
-.ft-brand {
-  font-family: 'Orbitron', monospace;
-  font-size: 9px;
-  font-weight: 700;
-  color: #ff6600;
-  letter-spacing: 3px;
-  font-style: italic;
-}
-
-.ft-model {
+/* ── Bank badge ── */
+.ft-bank {
   font-family: 'Orbitron', monospace;
   font-size: 9px;
   font-weight: 900;
-  color: #b0b8d0;
-  letter-spacing: 2px;
+  padding: 1px 5px;
+  border-radius: 3px;
+  letter-spacing: 1px;
+  border: 1px solid currentColor;
+}
+
+.bank-A {
+  color: #ff6600;
+  border-color: #ff6600;
+  text-shadow: 0 0 6px rgba(255,102,0,0.6);
+}
+
+.bank-B {
+  color: #00aaff;
+  border-color: #00aaff;
+  text-shadow: 0 0 6px rgba(0,170,255,0.6);
 }
 
 /* ══════════════════════════════════════
@@ -788,30 +900,6 @@ body {
 .mt-up.active { color: #00e676; opacity: 1; }
 .mt-dn.active { color: #ff4444; opacity: 1; }
 
-/* ── Bank badge (HUD footer) ── */
-.ft-bank {
-  font-family: 'Orbitron', monospace;
-  font-size: 10px;
-  font-weight: 900;
-  padding: 1px 6px;
-  border-radius: 3px;
-  margin-left: 8px;
-  letter-spacing: 1px;
-  border: 1px solid currentColor;
-}
-
-.bank-A {
-  color: #ff6600;
-  border-color: #ff6600;
-  text-shadow: 0 0 6px rgba(255,102,0,0.6);
-}
-
-.bank-B {
-  color: #00aaff;
-  border-color: #00aaff;
-  text-shadow: 0 0 6px rgba(0,170,255,0.6);
-}
-
 /* ── Drag / ET Slip overlay ── */
 #drag-slip {
   position: fixed;
@@ -894,7 +982,6 @@ body {
   right: 18px;
   display: none;
   user-select: none;
-  /* empurra pra cima do speedometer via transform aplicado por JS */
   filter: drop-shadow(0 4px 18px rgba(0,0,0,0.95));
 }
 
@@ -944,7 +1031,6 @@ body {
   letter-spacing: 2px;
 }
 
-/* Cor muda por faixa: rica = azul, estequio = verde, pobre = vermelho */
 .wbo2-val.rich  { color: #4488ff; text-shadow: 0 0 8px rgba(68,136,255,0.8), 0 0 20px rgba(68,136,255,0.4); }
 .wbo2-val.stoic { color: #00ff88; text-shadow: 0 0 8px rgba(0,255,136,0.8), 0 0 20px rgba(0,255,136,0.4); }
 .wbo2-val.lean  { color: #ff2200; text-shadow: 0 0 8px rgba(255,34,0,0.9), 0 0 20px rgba(255,34,0,0.4); }
