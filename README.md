@@ -1,3 +1,5 @@
+[![Discord](https://img.shields.io/badge/Discord-LuccasJunqueira-5865F2?style=for-the-badge&logo=discord&logoColor=white)](https://discord.com/users/983535825318969384)
+
 # FuelTech FT700 — GTA RP / QBCore
 
 Velocímetro avançado inspirado na ECU FuelTech FT700, com HUD em tempo real, popup de configuração de mapas de ignição/injeção 3D, launch control, boost controller, controle de tração, câmbio manual, timer de 1/4 milha e muito mais.
@@ -188,7 +190,7 @@ Estou começando agora no mundo de servidores GTA V e estou sempre aberto a troc
 
 Se você tiver scripts, recursos, dicas ou quiser colaborar, fique à vontade para me chamar!
 
-[![Discord](https://img.shields.io/badge/Discord-LuccasJunqueira-5865F2?style=for-the-badge&logo=discord&logoColor=white)](https://discord.com/users/983535825318969384)
+**Discord:** `LuccasJunqueira` — [clique aqui para me chamar](https://discord.com/users/983535825318969384)
 
 > Compartilhe recursos de GTA RP, dê sugestões ou reporte bugs — toda ajuda é bem-vinda!
 
