@@ -6,19 +6,20 @@ Velocímetro avançado inspirado na ECU FuelTech FT700, com HUD em tempo real, p
 
 ## Preview
 
-```
-┌─────────────────────────────────────┐
-│ ●●●●●●●●●●●●  (12 LEDs RGB)         │
-│                                     │
-│  ╭──────╮   KM/H  │  MARCHA         │
-│  │ RPM  │   245   │    3            │
-│  │gauge │                           │
-│  ╰──────╯  T.MTR P.OL LAMBDA        │
-│            P.CMB T.AR MOTOR%        │
-│  ODO  TRIP  ▓▓▓▓▓░░░  ACELER        │
-│  FuelTech        FT700         [A]  │
-└─────────────────────────────────────┘
-```
+### HUD — Velocímetro em jogo
+![HUD FuelTech FT700](docs/hud.png)
+
+### ECU Popup (`/ft`) — Menu Principal
+![ECU Menu Principal](docs/ecu_menu.png)
+
+### Mapa de Ignição 3D (6×9 — Carga × RPM)
+![Mapa Ignição](docs/ecu_map_ignition.png)
+
+### Mapa de Injeção 3D (6×9 — Carga × RPM)
+![Mapa Injeção](docs/ecu_map_injection.png)
+
+### Câmbio Manual + Timer de 1/4 milha
+![Drag Timer](docs/drag_timer.png)
 
 ---
 

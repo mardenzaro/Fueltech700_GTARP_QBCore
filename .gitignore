@@ -8,3 +8,7 @@ Thumbs.db
 
 # FiveM cache
 stream/
+
+# Node (screenshot tool)
+node_modules/
+package-lock.json
