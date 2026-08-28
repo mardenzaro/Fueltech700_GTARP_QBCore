@@ -188,7 +188,7 @@ Estou começando agora no mundo de servidores GTA V e estou sempre aberto a troc
 
 Se você tiver scripts, recursos, dicas ou quiser colaborar, fique à vontade para me chamar!
 
-**Discord:** `LuccasJunqueira#5945`
+[![Discord](https://img.shields.io/badge/Discord-LuccasJunqueira-5865F2?style=for-the-badge&logo=discord&logoColor=white)](https://discord.com/users/983535825318969384)
 
 > Compartilhe recursos de GTA RP, dê sugestões ou reporte bugs — toda ajuda é bem-vinda!
 
