@@ -182,6 +182,18 @@ Pull requests são bem-vindos! Para mudanças maiores, abra uma issue primeiro p
 
 ---
 
+## Contato
+
+Estou começando agora no mundo de servidores GTA V e estou sempre aberto a trocar experiência, receber sugestões de recursos, tirar dúvidas ou receber contribuições para o projeto.
+
+Se você tiver scripts, recursos, dicas ou quiser colaborar, fique à vontade para me chamar!
+
+**Discord:** `LuccasJunqueira#5945`
+
+> Compartilhe recursos de GTA RP, dê sugestões ou reporte bugs — toda ajuda é bem-vinda!
+
+---
+
 ## Licença
 
 [MIT](LICENSE)
