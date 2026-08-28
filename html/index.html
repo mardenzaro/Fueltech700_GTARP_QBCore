@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- ══════════════════════════════════════
+     WBO2 NANO (acima do speedometer)
+══════════════════════════════════════ -->
+<div id="wbo2-nano">
+  <div class="wbo2-bezel">
+    <div class="wbo2-brand">FuelTech</div>
+    <div class="wbo2-screen">
+      <span class="wbo2-val" id="wbo2Val">14.70</span>
+    </div>
+    <div class="wbo2-footer">WBØ2 NANO</div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     SPEEDOMETER HUD (bottom-right)
+══════════════════════════════════════ -->
+<div id="speedometer">
+  <div class="hud-bezel">
+
+    <!-- 12 RGB LEDs -->
+    <div class="led-strip" id="ledStrip">
+      <div class="led" id="led0"></div>
+      <div class="led" id="led1"></div>
+      <div class="led" id="led2"></div>
+      <div class="led" id="led3"></div>
+      <div class="led" id="led4"></div>
+      <div class="led" id="led5"></div>
+      <div class="led" id="led6"></div>
+      <div class="led" id="led7"></div>
+      <div class="led" id="led8"></div>
+      <div class="led" id="led9"></div>
+      <div class="led" id="led10"></div>
+      <div class="led" id="led11"></div>
+    </div>
+
+    <div class="hud-body">
+      <!-- Round RPM canvas -->
+      <div class="gauge-wrap">
+        <canvas id="rpmCanvas" width="160" height="160"></canvas>
+        <div class="gauge-center">
+          <div class="gauge-rpm-val" id="rpmVal">0</div>
+          <div class="gauge-rpm-lbl">RPM</div>
+        </div>
+      </div>
+
+      <!-- Right panel -->
+      <div class="right-panel">
+        <div class="data-row">
+          <div class="data-block">
+            <div class="data-lbl">KM/H</div>
+            <div class="data-big" id="speed">0</div>
+          </div>
+          <div class="data-block">
+            <div class="data-lbl">MARCHA</div>
+            <div class="data-gear" id="gear">N</div>
+          </div>
+        </div>
+        <div class="stats-grid">
+          <div class="sg-cell bg-amber">
+            <div class="sg-lbl">T.MOTOR</div>
+            <div class="sg-val" id="tMotor">20.0</div>
+          </div>
+          <div class="sg-cell bg-green">
+            <div class="sg-lbl">P.ÓLEO</div>
+            <div class="sg-val" id="pOleo">0.00</div>
+          </div>
+          <div class="sg-cell bg-dark">
+            <div class="sg-lbl">LAMBDA</div>
+            <div class="sg-val sg-big" id="sGeral">1.00</div>
+          </div>
+          <div class="sg-cell bg-amber">
+            <div class="sg-lbl">P.COMB</div>
+            <div class="sg-val" id="pComb">0.00</div>
+          </div>
+          <div class="sg-cell bg-amber">
+            <div class="sg-lbl">T.AR</div>
+            <div class="sg-val" id="tAr">25.0</div>
+          </div>
+          <div class="sg-cell bg-dark">
+            <div class="sg-lbl">MOTOR</div>
+            <div class="sg-val" id="motorHealth">100%</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Odo + fuel bar -->
+    <div class="odo-bar">
+      <div class="odo-block">
+        <span class="odo-lbl">ODO</span>
+        <span class="odo-val" id="odoTotal">00000.0</span>
+      </div>
+      <div class="odo-block">
+        <span class="odo-lbl">TRIP</span>
+        <span class="odo-val" id="odoTrip">0.0</span>
+      </div>
+      <div class="fuel-wrap">
+        <span class="odo-lbl">TANQUE</span>
+        <div class="fuel-track"><div class="fuel-fill" id="tanqueFill"></div></div>
+      </div>
+      <div class="odo-block">
+        <span class="odo-lbl">ACELER</span>
+        <span class="odo-val" id="dataThrottle">0%</span>
+      </div>
+    </div>
+
+    <!-- Alerts ticker -->
+    <div class="alert-bar" id="alertBar"></div>
+
+    <div class="hud-footer">
+      <span class="ft-brand">FuelTech</span>
+      <span class="ft-model">FT700</span>
+      <span id="bankBadge" class="ft-bank bank-A">A</span>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     ECU POPUP — /ft command (FT700 device)
+══════════════════════════════════════ -->
+<div id="ecu-menu">
+  <div class="ft700-device">
+
+    <!-- Device header -->
+    <div class="ft700-hdr">
+      <div class="ft700-led-strip" id="menuLedStrip">
+        <div class="mled" id="ml0"></div><div class="mled" id="ml1"></div>
+        <div class="mled" id="ml2"></div><div class="mled" id="ml3"></div>
+        <div class="mled" id="ml4"></div><div class="mled" id="ml5"></div>
+        <div class="mled" id="ml6"></div><div class="mled" id="ml7"></div>
+        <div class="mled" id="ml8"></div><div class="mled" id="ml9"></div>
+        <div class="mled" id="ml10"></div><div class="mled" id="ml11"></div>
+      </div>
+      <div class="ft700-brand">
+        <span class="ft700-name">FuelTech</span>
+        <span class="ft700-model-lbl">FT700</span>
+      </div>
+    </div>
+
+    <!-- Mid area: side LEDs + LCD + side LEDs -->
+    <div class="ft700-mid">
+
+      <!-- 4 alert LEDs — left side -->
+      <div class="ft700-side-leds">
+        <div class="sled" id="sl0"></div>
+        <div class="sled" id="sl1"></div>
+        <div class="sled" id="sl2"></div>
+        <div class="sled" id="sl3"></div>
+      </div>
+
+      <!-- LCD content area -->
+      <div class="ft700-lcd" id="lcdContent">
+        <!-- populated by JS -->
+      </div>
+
+      <!-- 4 alert LEDs — right side -->
+      <div class="ft700-side-leds">
+        <div class="sled" id="sr0"></div>
+        <div class="sled" id="sr1"></div>
+        <div class="sled" id="sr2"></div>
+        <div class="sled" id="sr3"></div>
+      </div>
+
+    </div>
+
+    <!-- Control buttons row -->
+    <div class="ft700-ctrl">
+      <button class="ft700-btn btn-back"  id="btnBack">✗</button>
+      <button class="ft700-btn btn-menu"  id="btnMenu">≡ MENU</button>
+      <button class="ft700-btn btn-ok"    id="btnOk">✓</button>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     MANUAL TRANSMISSION badge
+══════════════════════════════════════ -->
+<div id="mt-badge" style="display:none;">
+  <div class="mt-label">MANUAL</div>
+  <div class="mt-gear" id="mtGear">1</div>
+  <div class="mt-arrows">
+    <span class="mt-up" id="mtUp">▲</span>
+    <span class="mt-dn" id="mtDn">▼</span>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     DRAG / ET SLIP overlay (auto-hide 12s)
+══════════════════════════════════════ -->
+<div id="drag-slip" style="display:none;">
+  <div class="slip-inner">
+    <div class="slip-title">⏱ ET SLIP — 1/4 MILHA</div>
+    <div class="slip-row">
+      <span class="slip-lbl">60 km/h</span>
+      <span class="slip-val" id="slip60">---</span>
+    </div>
+    <div class="slip-row">
+      <span class="slip-lbl">100 km/h</span>
+      <span class="slip-val" id="slip100">---</span>
+    </div>
+    <div class="slip-row">
+      <span class="slip-lbl">402 m (1/4)</span>
+      <span class="slip-val" id="slip402">---</span>
+    </div>
+    <div class="slip-row slip-row-trap">
+      <span class="slip-lbl">TRAP</span>
+      <span class="slip-val slip-trap" id="slipSpd">---</span>
+    </div>
+  </div>
+</div>
+
+<script src="script.js?v=7"></script>
+</body>
+</html>
