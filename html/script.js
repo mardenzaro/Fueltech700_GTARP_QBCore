@@ -174,83 +174,101 @@ function drawMiniGauge(ctx, w, h, norm, arcColor) {
   ctx.fill();
 }
 
-// ── Lambda arc gauge draw ─────────────────────────────────────────────────────
+// ── Lambda circular gauge draw (270° arc + value text inside) ─────────────────
+let _curLamStr = '1.00';
+
 function drawLambdaGauge(norm) {
   if (!ctxLam || !$lamGauge) return;
-  const w  = $lamGauge.width;
-  const h  = $lamGauge.height;
+  const w  = $lamGauge.width;   // 106
+  const h  = $lamGauge.height;  // 106
   const cx = w * 0.5;
-  const cy = h - 4;
-  const r  = Math.min(cx - 6, h - 10);
+  const cy = h * 0.5;
+  const r  = cx - 10;           // ≈ 43
   const n  = Math.max(0, Math.min(1, norm));
+
+  // 270° sweep: start at 135° (7:30), end at 405°=45° (4:30), clockwise
+  const SA   = Math.PI * 0.75;  // 135°
+  const SWEEP = Math.PI * 1.5;   // 270°
 
   ctxLam.clearRect(0, 0, w, h);
 
-  // Outer ring glow
+  // Outer glow ring
   ctxLam.beginPath();
-  ctxLam.arc(cx, cy, r + 2, Math.PI, Math.PI * 2);
-  ctxLam.strokeStyle = '#0e1020';
-  ctxLam.lineWidth = 1;
+  ctxLam.arc(cx, cy, r + 5, 0, Math.PI * 2);
+  ctxLam.strokeStyle = '#0d0f18';
+  ctxLam.lineWidth = 2;
   ctxLam.stroke();
 
-  // Track
+  // Track (full 270° dark arc)
   ctxLam.beginPath();
-  ctxLam.arc(cx, cy, r, Math.PI, Math.PI * 2);
-  ctxLam.strokeStyle = '#151820';
-  ctxLam.lineWidth = 8;
-  ctxLam.lineCap = 'butt';
+  ctxLam.arc(cx, cy, r, SA, SA + SWEEP);
+  ctxLam.strokeStyle = '#161a28';
+  ctxLam.lineWidth = 9;
+  ctxLam.lineCap = 'round';
   ctxLam.stroke();
 
-  // Color: rich (blue) → stoich (green) → lean (red)
+  // Colored fill arc — rich=blue, stoich=green, lean=red
   let arcColor;
-  if (n < 0.42)      arcColor = '#4488ff';
+  if (n < 0.42)      arcColor = '#3377ff';
   else if (n < 0.58) arcColor = '#00e676';
   else               arcColor = '#ff3300';
 
-  if (n > 0.01) {
+  if (n > 0.005) {
     ctxLam.beginPath();
-    ctxLam.arc(cx, cy, r, Math.PI, Math.PI + Math.PI * n);
+    ctxLam.arc(cx, cy, r, SA, SA + SWEEP * n);
     ctxLam.strokeStyle = arcColor;
-    ctxLam.lineWidth = 8;
+    ctxLam.lineWidth = 9;
     ctxLam.lineCap = 'round';
     ctxLam.stroke();
   }
 
-  // 5 tick marks
+  // Stoich marker at center (norm=0.5 → 270°)
+  const stoichA = SA + SWEEP * 0.5;
+  ctxLam.beginPath();
+  ctxLam.moveTo(cx + (r - 12) * Math.cos(stoichA), cy + (r - 12) * Math.sin(stoichA));
+  ctxLam.lineTo(cx + (r + 1)  * Math.cos(stoichA), cy + (r + 1)  * Math.sin(stoichA));
+  ctxLam.strokeStyle = 'rgba(0,230,118,0.6)';
+  ctxLam.lineWidth = 2;
+  ctxLam.stroke();
+
+  // Tick marks at 0%, 25%, 50%, 75%, 100%
   for (let i = 0; i <= 4; i++) {
-    const ang = Math.PI + (Math.PI * i / 4);
+    const ang = SA + SWEEP * (i / 4);
     ctxLam.beginPath();
-    ctxLam.moveTo(cx + (r - 10) * Math.cos(ang), cy + (r - 10) * Math.sin(ang));
-    ctxLam.lineTo(cx + (r + 2)  * Math.cos(ang), cy + (r + 2)  * Math.sin(ang));
-    ctxLam.strokeStyle = '#2a2e48';
+    ctxLam.moveTo(cx + (r - 11) * Math.cos(ang), cy + (r - 11) * Math.sin(ang));
+    ctxLam.lineTo(cx + (r + 1)  * Math.cos(ang), cy + (r + 1)  * Math.sin(ang));
+    ctxLam.strokeStyle = i === 2 ? 'rgba(0,230,118,0.3)' : '#252838';
     ctxLam.lineWidth = 1.5;
     ctxLam.stroke();
   }
 
-  // Stoich line at center (norm=0.5)
-  const stoichAng = Math.PI + Math.PI * 0.5;
-  ctxLam.beginPath();
-  ctxLam.moveTo(cx + (r - 14) * Math.cos(stoichAng), cy + (r - 14) * Math.sin(stoichAng));
-  ctxLam.lineTo(cx + (r + 4)  * Math.cos(stoichAng), cy + (r + 4)  * Math.sin(stoichAng));
-  ctxLam.strokeStyle = 'rgba(0,230,118,0.45)';
-  ctxLam.lineWidth = 1.5;
-  ctxLam.stroke();
-
   // Needle
-  const na = Math.PI + Math.PI * n;
+  const na = SA + SWEEP * n;
   ctxLam.beginPath();
   ctxLam.moveTo(cx, cy);
-  ctxLam.lineTo(cx + (r - 6) * Math.cos(na), cy + (r - 6) * Math.sin(na));
+  ctxLam.lineTo(cx + (r - 12) * Math.cos(na), cy + (r - 12) * Math.sin(na));
   ctxLam.strokeStyle = '#ffffff';
   ctxLam.lineWidth = 2;
   ctxLam.lineCap = 'round';
   ctxLam.stroke();
 
-  // Center pivot
+  // Center pivot dot
   ctxLam.beginPath();
-  ctxLam.arc(cx, cy, 3.5, 0, Math.PI * 2);
+  ctxLam.arc(cx, cy, 4, 0, Math.PI * 2);
   ctxLam.fillStyle = arcColor;
   ctxLam.fill();
+
+  // Lambda value text drawn inside gauge
+  ctxLam.textAlign    = 'center';
+  ctxLam.textBaseline = 'middle';
+
+  ctxLam.font      = 'bold 19px Orbitron, monospace';
+  ctxLam.fillStyle = '#ffffff';
+  ctxLam.fillText(_curLamStr, cx, cy - 4);
+
+  ctxLam.font      = '8px Orbitron, monospace';
+  ctxLam.fillStyle = arcColor;
+  ctxLam.fillText('λ', cx, cy + 13);
 }
 
 // ── Mini gauge animation loop ─────────────────────────────────────────────────
@@ -265,10 +283,10 @@ function animateMiniGauges() {
   s.oil.v  += (s.oil.t  - s.oil.v)  * MINI_LERP;
   s.lam.v  += (s.lam.t  - s.lam.v)  * MINI_LERP;
 
-  drawMiniGauge(ctxFuel, 58, 44, s.fuel.v, '#00cc55');
-  drawMiniGauge(ctxGRpm, 58, 44, s.rpm.v,  '#ff6600');
-  drawMiniGauge(ctxGTmp, 58, 44, s.temp.v, '#ffaa00');
-  drawMiniGauge(ctxGOil, 58, 44, s.oil.v,  '#00aaff');
+  drawMiniGauge(ctxFuel, 54, 42, s.fuel.v, '#00cc55');
+  drawMiniGauge(ctxGRpm, 54, 42, s.rpm.v,  '#ff6600');
+  drawMiniGauge(ctxGTmp, 54, 42, s.temp.v, '#ffaa00');
+  drawMiniGauge(ctxGOil, 54, 42, s.oil.v,  '#00aaff');
   drawLambdaGauge(s.lam.v);
 
   requestAnimationFrame(animateMiniGauges);
@@ -408,7 +426,8 @@ function updateHUD(d) {
   $gear.textContent         = d.gear ?? 'N';
   $tMotor.textContent       = d.oilTemp      ?? '20.0';
   $pOleo.textContent        = d.oilPressure  ?? '0.00';
-  $sGeral.textContent       = d.lambda       ?? '1.00';
+  _curLamStr = d.lambda ?? '1.00';
+  $sGeral.textContent       = _curLamStr;
   $pComb.textContent        = d.fuelPressure ?? '0.00';
   $tAr.textContent          = d.airTemp      ?? '25.0';
   $motorHealth.textContent  = Math.floor((d.engineHealth ?? 1) * 100) + '%';

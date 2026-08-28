@@ -57,28 +57,28 @@
         <div class="gauges-row">
 
           <div class="mini-gwrap">
-            <canvas id="gaugeFuel" width="58" height="44" class="mini-canvas"></canvas>
+            <canvas id="gaugeFuel" width="54" height="42" class="mini-canvas"></canvas>
             <div class="mini-glabels">
               <span>E</span><span class="mini-gtitle">COMB</span><span>F</span>
             </div>
           </div>
 
           <div class="mini-gwrap">
-            <canvas id="gaugeRpm" width="58" height="44" class="mini-canvas"></canvas>
+            <canvas id="gaugeRpm" width="54" height="42" class="mini-canvas"></canvas>
             <div class="mini-glabels">
               <span>0</span><span class="mini-gtitle">RPM</span><span>9k</span>
             </div>
           </div>
 
           <div class="mini-gwrap">
-            <canvas id="gaugeTemp" width="58" height="44" class="mini-canvas"></canvas>
+            <canvas id="gaugeTemp" width="54" height="42" class="mini-canvas"></canvas>
             <div class="mini-glabels">
               <span>C</span><span class="mini-gtitle">T.MOT</span><span>H</span>
             </div>
           </div>
 
           <div class="mini-gwrap">
-            <canvas id="gaugeOil" width="58" height="44" class="mini-canvas"></canvas>
+            <canvas id="gaugeOil" width="54" height="42" class="mini-canvas"></canvas>
             <div class="mini-glabels">
               <span>0</span><span class="mini-gtitle">P.OLE</span><span>10</span>
             </div>
@@ -89,13 +89,13 @@
         <!-- Gear / MANUAL area -->
         <div class="cluster-gear-row">
           <span class="cluster-manual-txt" id="clManualTxt">MANUAL</span>
-          <span class="cluster-gear" id="gear">N</span>
-        </div>
-
-        <!-- Large speed number -->
-        <div class="cluster-speed-row">
-          <span class="cluster-spd" id="speed">000</span>
-          <span class="cluster-spd-unit">KM/H</span>
+          <div class="cluster-gear-box">
+            <span class="cluster-gear" id="gear">N</span>
+          </div>
+          <div class="cluster-spd-side">
+            <span class="cluster-spd" id="speed">0</span>
+            <span class="cluster-spd-unit">KM/H</span>
+          </div>
         </div>
 
         <!-- Bottom: green C dot + odometer -->
@@ -126,18 +126,15 @@
           <span id="bankBadge" class="ft-bank bank-A">A</span>
         </div>
 
-        <!-- Lambda oval gauge screen -->
+        <!-- Lambda circular gauge screen (value drawn on canvas) -->
         <div class="ftd-screen">
-          <canvas id="lambdaGauge" width="104" height="62"></canvas>
-          <div class="ftd-lam-overlay">
-            <div class="ftd-lam-val" id="sGeral">0.99</div>
-            <div class="ftd-lam-unit">λ</div>
-          </div>
+          <canvas id="lambdaGauge" width="106" height="106"></canvas>
+          <span id="sGeral" class="hud-hidden-val">1.00</span>
         </div>
 
         <!-- Efficiency row -->
         <div class="ftd-eff">
-          <span class="ftd-eff-val">—</span>
+          <span class="ftd-eff-val">0</span>
           <span class="ftd-eff-unit">km/g</span>
         </div>
 
