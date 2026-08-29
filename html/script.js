@@ -194,11 +194,12 @@ let _curLamStr = '1.00';
 
 function drawLambdaGauge(norm) {
   if (!ctxLam || !$lamGauge) return;
-  const w  = $lamGauge.width;   // 106
-  const h  = $lamGauge.height;  // 106
+  const w  = $lamGauge.width;
+  const h  = $lamGauge.height;
   const cx = w * 0.5;
   const cy = h * 0.5;
-  const r  = cx - 10;           // ≈ 43
+  const r  = cx - 10;
+  if (r <= 0) return;
   const n  = Math.max(0, Math.min(1, norm));
 
   // 270° sweep: start at 135° (7:30), end at 405°=45° (4:30), clockwise
