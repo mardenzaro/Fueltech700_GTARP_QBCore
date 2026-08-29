@@ -113,11 +113,11 @@ body {
   text-transform: uppercase;
 }
 
-/* Gear / MANUAL row */
+/* Gear / MANUAL row — linha compacta só com o gear box */
 .cluster-gear-row {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   padding: 2px 2px 0;
 }
 
@@ -132,8 +132,8 @@ body {
 
 /* Gear number inside a bordered square box */
 .cluster-gear-box {
-  width: 44px;
-  height: 44px;
+  width: 42px;
+  height: 42px;
   border: 2px solid #505878;
   display: flex;
   align-items: center;
@@ -144,35 +144,37 @@ body {
 
 .cluster-gear {
   font-family: 'Orbitron', monospace;
-  font-size: 26px;
+  font-size: 24px;
   font-weight: 900;
   color: #c0c8e0;
   line-height: 1;
   transition: color 0.15s, text-shadow 0.15s;
 }
 
-/* Speed alongside gear box */
-.cluster-spd-side {
+/* Velocidade — número dominante do cluster */
+.cluster-speed-row {
   display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 0;
+  align-items: baseline;
+  gap: 4px;
+  padding: 0 2px;
+  margin-top: -2px;
 }
 
 .cluster-spd {
   font-family: 'Orbitron', monospace;
-  font-size: 36px;
+  font-size: 52px;
   font-weight: 900;
   color: #ffffff;
   line-height: 1;
-  letter-spacing: -2px;
+  letter-spacing: -3px;
 }
 
 .cluster-spd-unit {
   font-family: 'Orbitron', monospace;
-  font-size: 8px;
+  font-size: 9px;
   color: #404868;
   letter-spacing: 2px;
+  padding-bottom: 4px;
 }
 
 /* Bottom row: green C circle + odo */
