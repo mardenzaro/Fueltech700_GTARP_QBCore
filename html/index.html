@@ -25,127 +25,143 @@
 </div>
 
 <!-- ══════════════════════════════════════
-     FT700 PLUS — HUD principal
+     FT700 — PHYSICAL DEVICE HUD
 ══════════════════════════════════════ -->
 <div id="speedometer">
-  <div class="ft-root">
+  <div class="ft-shell">
 
-    <!-- ── LED Strip ─────────────────────────────── -->
-    <div class="led-strip" id="ledStrip">
-      <div class="led" id="led0"></div>
-      <div class="led" id="led1"></div>
-      <div class="led" id="led2"></div>
-      <div class="led" id="led3"></div>
-      <div class="led" id="led4"></div>
-      <div class="led" id="led5"></div>
-      <div class="led" id="led6"></div>
-      <div class="led" id="led7"></div>
-      <div class="led" id="led8"></div>
-      <div class="led" id="led9"></div>
-      <div class="led" id="led10"></div>
-      <div class="led" id="led11"></div>
+    <!-- TOP: LED strip + RPM + lambda bar -->
+    <div class="ft-top">
+      <div class="led-strip" id="ledStrip">
+        <div class="led" id="led0"></div><div class="led" id="led1"></div>
+        <div class="led" id="led2"></div><div class="led" id="led3"></div>
+        <div class="led" id="led4"></div><div class="led" id="led5"></div>
+        <div class="led" id="led6"></div><div class="led" id="led7"></div>
+        <div class="led" id="led8"></div><div class="led" id="led9"></div>
+        <div class="led" id="led10"></div><div class="led" id="led11"></div>
+      </div>
+      <div class="ft-top-data">
+        <div class="ft-rpm-block">
+          <span class="ft-rpm-num" id="rpmVal">0000</span>
+          <span class="ft-rpm-lbl">RPM</span>
+        </div>
+        <div class="ft-lam-block">
+          <span class="ft-lam-top-lbl">Sonda geral</span>
+          <div class="ft-lam-top-row">
+            <div class="ft-lam-bar-track">
+              <div class="ft-lam-bar-fill" id="lamBarFill"></div>
+            </div>
+            <span class="ft-lam-top-val" id="sGeral">1.000</span>
+          </div>
+        </div>
+      </div>
     </div>
 
-    <!-- ── Main Dashboard ────────────────────────── -->
-    <div class="ft-dash">
+    <!-- BODY: bars | gear | gauges -->
+    <div class="ft-body">
 
-      <!-- LEFT: Engine indicator + Gear/RPM gauge -->
-      <div class="ft-left">
-        <div class="ft-engine-btn">
-          <div class="ft-engine-ring" id="ftEngineDot"></div>
-          <span class="ft-engine-lbl">START<br>Engine</span>
+      <!-- LEFT: 4 horizontal bar indicators -->
+      <div class="ft-bars">
+        <div class="ft-brow">
+          <span class="ft-blbl">ENG TEMP</span>
+          <div class="ft-btrack"><div class="ft-bfill" id="barEngTemp"></div></div>
+          <span class="ft-bval" id="tMotor">20</span>
         </div>
-        <div class="ft-gear-wrap">
-          <canvas id="gearCanvas" width="88" height="88"></canvas>
+        <div class="ft-brow">
+          <span class="ft-blbl">OIL TEMP</span>
+          <div class="ft-btrack"><div class="ft-bfill" id="barOilTemp"></div></div>
+          <span class="ft-bval" id="tAr">25</span>
+        </div>
+        <div class="ft-brow">
+          <span class="ft-blbl">OIL PRES</span>
+          <div class="ft-btrack"><div class="ft-bfill" id="barOilPres"></div></div>
+          <span class="ft-bval" id="pOleo">0.0</span>
+        </div>
+        <div class="ft-brow">
+          <span class="ft-blbl">FUEL PRES</span>
+          <div class="ft-btrack"><div class="ft-bfill" id="barFuelPres"></div></div>
+          <span class="ft-bval" id="pComb">0.0</span>
         </div>
       </div>
 
-      <!-- CENTER-LEFT: Data block -->
-      <div class="ft-data">
-        <div class="ft-dline">
-          <span class="ft-dlbl">T. Motor</span>
-          <span class="ft-dval" id="tMotor">20.0</span>
+      <!-- CENTER: gear + comb + engine health -->
+      <div class="ft-center">
+        <div class="ft-gear-block">
+          <span class="ft-gear-lbl">GEAR</span>
+          <span class="ft-gear-num" id="gear">N</span>
         </div>
-        <div class="ft-dline">
-          <span class="ft-dlbl">P. Óleo</span>
-          <span class="ft-dval" id="pOleo">0.00</span>
+        <div class="ft-comb-grid">
+          <div class="ft-comb-cell">
+            <span class="ft-comb-lbl">COMB.</span>
+            <span class="ft-comb-val" id="tanquePct">0%</span>
+          </div>
+          <div class="ft-comb-cell">
+            <span class="ft-comb-lbl">COMB. %</span>
+            <span class="ft-comb-val" id="combMode">Comum</span>
+          </div>
         </div>
-        <div class="ft-dline">
-          <span class="ft-dlbl">Possível Dist.</span>
-          <span class="ft-dval" id="dataThrottle">0%</span>
-        </div>
-        <div class="ft-dline">
-          <span class="ft-dlbl">P. Comb.</span>
-          <span class="ft-dval" id="pComb">0.00</span>
-        </div>
-        <div class="ft-dline">
-          <span class="ft-dlbl">Motor</span>
-          <span class="ft-dval" id="motorHealth">100%</span>
+        <div class="ft-eng-row">
+          <span class="ft-eng-lbl">Motor</span>
+          <span class="ft-eng-val" id="motorHealth">100%</span>
         </div>
       </div>
 
-      <!-- CENTER: Main speedometer -->
-      <div class="ft-speedo">
-        <div class="ft-speedo-wrap">
-          <canvas id="speedCanvas" width="168" height="168"></canvas>
-          <div class="ft-speed-overlay">
-            <div class="ft-speed-num" id="speed">0</div>
-            <div class="ft-speed-unit">km/h</div>
+      <!-- RIGHT: 3 circular gauges -->
+      <div class="ft-gauges">
+        <div class="ft-gauge-top-row">
+          <div class="ft-gwrap">
+            <canvas id="gaugeMap" width="88" height="88"></canvas>
+            <div class="ft-gov">
+              <span class="ft-gval" id="valMap">0.00</span>
+              <span class="ft-gunit">bar</span>
+            </div>
+          </div>
+          <div class="ft-gwrap">
+            <canvas id="lambdaGauge" width="88" height="88"></canvas>
+            <div class="ft-gov">
+              <span class="ft-gval" id="valLam">1.00</span>
+              <span class="ft-gunit">λ</span>
+            </div>
           </div>
         </div>
-      </div>
-
-      <!-- RIGHT: Side data + fuel bar -->
-      <div class="ft-right">
-        <div class="ft-rdata">
-          <div class="ft-dline">
-            <span class="ft-dlbl">T. Ar</span>
-            <span class="ft-dval" id="tAr">25.0</span>
+        <div class="ft-gauge-bot-row">
+          <div class="ft-gwrap">
+            <canvas id="speedCanvas" width="88" height="88"></canvas>
+            <div class="ft-gov">
+              <span class="ft-gval ft-gval-spd" id="speed">0</span>
+              <span class="ft-gunit">km/h</span>
+            </div>
           </div>
-          <div class="ft-dline">
-            <span class="ft-dlbl">Lambda</span>
-            <span class="ft-dval ft-dval-lam" id="sGeral">1.00</span>
-          </div>
-          <div class="ft-dline">
-            <span class="ft-dlbl">Trip</span>
-            <span class="ft-dval" id="odoTrip">0.0</span>
-          </div>
-        </div>
-        <div class="ft-fuelbar-outer">
-          <div class="ft-fuelbar-track">
-            <div class="ft-fuelbar-fill" id="tanqueFill"></div>
-          </div>
-          <span class="ft-fuelbar-lbl">E</span>
-          <span class="ft-fuelbar-lbl ft-fuelbar-f">F</span>
         </div>
       </div>
 
     </div>
 
-    <!-- ── Bottom bar ────────────────────────────── -->
-    <div class="ft-bottom">
-      <span class="ftb-odo" id="odoTotal">00000.0</span>
-      <span class="ftb-model">FT700 PLUS</span>
-      <div class="ftb-lam-wrap">
-        <span class="ftb-lam-val" id="ftLamBottom">1.00</span>
-        <span class="ftb-lam-sym">λ</span>
+    <!-- BOTTOM BAR -->
+    <div class="ft-botbar">
+      <span class="ft-bot-model">FT700</span>
+      <div class="ft-bot-odo">
+        <span id="odoTotal">00000.0</span>
+        <span class="ft-bot-trip">T: <span id="odoTrip">0.0</span></span>
       </div>
-      <span class="ftb-logo">FuelTech</span>
       <span id="bankBadge" class="ft-bank bank-A">A</span>
+      <span class="ft-bot-logo">FuelTech</span>
     </div>
 
-    <!-- Alert -->
+    <!-- Alert bar -->
     <div class="alert-bar" id="alertBar"></div>
 
-    <!-- ── Hidden IDs required by script.js ─────── -->
-    <canvas id="rpmCanvas"  width="160" height="160" class="hud-hidden"></canvas>
-    <canvas id="lambdaGauge" width="10" height="10"  class="hud-hidden"></canvas>
-    <canvas id="gaugeFuel"  width="10"  height="10"  class="hud-hidden"></canvas>
-    <canvas id="gaugeRpm"   width="10"  height="10"  class="hud-hidden"></canvas>
-    <canvas id="gaugeTemp"  width="10"  height="10"  class="hud-hidden"></canvas>
-    <canvas id="gaugeOil"   width="10"  height="10"  class="hud-hidden"></canvas>
-    <span id="gear"         class="hud-hidden">N</span>
-    <span id="rpmVal"       class="hud-hidden">0</span>
+    <!-- Hidden elements required by script.js -->
+    <canvas id="rpmCanvas"  width="10" height="10" class="hud-hidden"></canvas>
+    <canvas id="gaugeFuel"  width="10" height="10" class="hud-hidden"></canvas>
+    <canvas id="gaugeRpm"   width="10" height="10" class="hud-hidden"></canvas>
+    <canvas id="gaugeTemp"  width="10" height="10" class="hud-hidden"></canvas>
+    <canvas id="gaugeOil"   width="10" height="10" class="hud-hidden"></canvas>
+    <canvas id="gearCanvas" width="10" height="10" class="hud-hidden"></canvas>
+    <span   id="dataThrottle" class="hud-hidden">0%</span>
+    <span   id="ftLamBottom"  class="hud-hidden"></span>
+    <div    id="ftEngineDot"  class="hud-hidden"></div>
+    <div    id="tanqueFill"   class="hud-hidden"></div>
 
   </div>
 </div>
@@ -189,7 +205,7 @@
 </div>
 
 <!-- ══════════════════════════════════════
-     MANUAL TRANSMISSION badge
+     MANUAL TRANSMISSION BADGE
 ══════════════════════════════════════ -->
 <div id="mt-badge" style="display:none;">
   <div class="mt-label">MANUAL</div>
@@ -201,7 +217,7 @@
 </div>
 
 <!-- ══════════════════════════════════════
-     DRAG / ET SLIP overlay
+     DRAG / ET SLIP OVERLAY
 ══════════════════════════════════════ -->
 <div id="drag-slip" style="display:none;">
   <div class="slip-inner">
@@ -225,6 +241,6 @@
   </div>
 </div>
 
-<script src="script.js?v=9"></script>
+<script src="script.js?v=11"></script>
 </body>
 </html>

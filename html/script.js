@@ -39,7 +39,16 @@ const $alertBar    = document.getElementById('alertBar');
 const $lcdContent  = document.getElementById('lcdContent');
 const $bankBadge   = document.getElementById('bankBadge');
 const $ftEngineDot = document.getElementById('ftEngineDot');
-const $ftLamBottom = document.getElementById('ftLamBottom');
+const $ftLamBottom   = document.getElementById('ftLamBottom');
+const $barEngTemp    = document.getElementById('barEngTemp');
+const $barOilTemp    = document.getElementById('barOilTemp');
+const $barOilPres    = document.getElementById('barOilPres');
+const $barFuelPres   = document.getElementById('barFuelPres');
+const $lamBarFill    = document.getElementById('lamBarFill');
+const $valMap        = document.getElementById('valMap');
+const $valLam        = document.getElementById('valLam');
+const $tanquePct     = document.getElementById('tanquePct');
+const $combMode      = document.getElementById('combMode');
 
 // ── Mini gauge canvas refs (new layout) ──────────────────────────────────────
 const $gaugeFuel = document.getElementById('gaugeFuel');
@@ -54,6 +63,9 @@ const ctxGTmp = $gaugeTemp ? $gaugeTemp.getContext('2d') : null;
 const ctxGOil = $gaugeOil  ? $gaugeOil.getContext('2d')  : null;
 const ctxLam  = $lamGauge  ? $lamGauge.getContext('2d')  : null;
 
+const $gaugeMapCanvas = document.getElementById('gaugeMap');
+const ctxMap = $gaugeMapCanvas ? $gaugeMapCanvas.getContext('2d') : null;
+
 // ── FT700 PLUS main canvas refs ───────────────────────────────────────────────
 const $speedCanvas = document.getElementById('speedCanvas');
 const ctxSpd  = $speedCanvas ? $speedCanvas.getContext('2d') : null;
@@ -66,6 +78,8 @@ let _gearNorm    = 0;
 let _gearTgt     = 0;
 let _curGearStr  = 'N';
 let _mtGearGreen = false;
+let _mapNorm     = 0;
+let _mapTgt      = 0;
 
 const miniGS = {
   fuel: { t: 0,   v: 0   },
@@ -274,17 +288,84 @@ function drawLambdaGauge(norm) {
   ctxLam.fillStyle = arcColor;
   ctxLam.fill();
 
-  // Lambda value text drawn inside gauge
-  ctxLam.textAlign    = 'center';
-  ctxLam.textBaseline = 'middle';
+}
 
-  ctxLam.font      = 'bold 19px Orbitron, monospace';
-  ctxLam.fillStyle = '#ffffff';
-  ctxLam.fillText(_curLamStr, cx, cy - 4);
+// ── MAP pressure gauge (88×88 canvas) ────────────────────────────────────────
+function drawMapGauge(norm) {
+  if (!ctxMap || !$gaugeMapCanvas) return;
+  const w  = $gaugeMapCanvas.width;
+  const h  = $gaugeMapCanvas.height;
+  const cx = w * 0.5;
+  const cy = h * 0.5;
+  const r  = cx - 10;
+  if (r <= 0) return;
+  const n  = Math.max(0, Math.min(1, norm));
 
-  ctxLam.font      = '8px Orbitron, monospace';
-  ctxLam.fillStyle = arcColor;
-  ctxLam.fillText('λ', cx, cy + 13);
+  const SA    = Math.PI * 0.75;
+  const SWEEP = Math.PI * 1.5;
+
+  ctxMap.clearRect(0, 0, w, h);
+
+  ctxMap.beginPath();
+  ctxMap.arc(cx, cy, r + 5, 0, Math.PI * 2);
+  ctxMap.strokeStyle = '#0d0f18';
+  ctxMap.lineWidth = 2;
+  ctxMap.stroke();
+
+  ctxMap.beginPath();
+  ctxMap.arc(cx, cy, r, SA, SA + SWEEP);
+  ctxMap.strokeStyle = '#161a28';
+  ctxMap.lineWidth = 9;
+  ctxMap.lineCap = 'round';
+  ctxMap.stroke();
+
+  let arcColor;
+  if (n < 0.30)      arcColor = '#3377ff';
+  else if (n < 0.42) arcColor = '#00e676';
+  else               arcColor = '#ff8800';
+  if (n > 0.88)      arcColor = '#ff2200';
+
+  if (n > 0.005) {
+    ctxMap.beginPath();
+    ctxMap.arc(cx, cy, r, SA, SA + SWEEP * n);
+    ctxMap.strokeStyle = arcColor;
+    ctxMap.lineWidth = 9;
+    ctxMap.lineCap = 'round';
+    ctxMap.stroke();
+  }
+
+  // Atmospheric reference tick at 0 bar (norm = 1/3)
+  const atmA = SA + SWEEP * (1.0 / 3.0);
+  ctxMap.beginPath();
+  ctxMap.moveTo(cx + (r - 12) * Math.cos(atmA), cy + (r - 12) * Math.sin(atmA));
+  ctxMap.lineTo(cx + (r + 1)  * Math.cos(atmA), cy + (r + 1)  * Math.sin(atmA));
+  ctxMap.strokeStyle = 'rgba(0,230,118,0.6)';
+  ctxMap.lineWidth = 2;
+  ctxMap.stroke();
+
+  for (let i = 0; i <= 4; i++) {
+    const ang = SA + SWEEP * (i / 4);
+    ctxMap.beginPath();
+    ctxMap.moveTo(cx + (r - 11) * Math.cos(ang), cy + (r - 11) * Math.sin(ang));
+    ctxMap.lineTo(cx + (r + 1)  * Math.cos(ang), cy + (r + 1)  * Math.sin(ang));
+    ctxMap.strokeStyle = '#252838';
+    ctxMap.lineWidth = 1.5;
+    ctxMap.stroke();
+  }
+
+  const na = SA + SWEEP * n;
+  ctxMap.beginPath();
+  ctxMap.moveTo(cx, cy);
+  ctxMap.lineTo(cx + (r - 12) * Math.cos(na), cy + (r - 12) * Math.sin(na));
+  ctxMap.strokeStyle = '#ffffff';
+  ctxMap.lineWidth = 2;
+  ctxMap.lineCap = 'round';
+  ctxMap.stroke();
+
+  ctxMap.beginPath();
+  ctxMap.arc(cx, cy, 4, 0, Math.PI * 2);
+  ctxMap.fillStyle = arcColor;
+  ctxMap.fill();
 }
 
 // ── FT700 PLUS: speed arc gauge (168×168 canvas) ─────────────────────────────
@@ -294,7 +375,7 @@ function drawSpeedGauge(norm) {
   const h  = $speedCanvas.height;
   const cx = w / 2;
   const cy = h / 2;
-  const R  = 74;
+  const R  = Math.min(cx, cy) - 6;
   const SA = Math.PI * 0.75;
   const SW = Math.PI * 1.5;
   const n  = Math.max(0, Math.min(1, norm));
@@ -461,8 +542,10 @@ function animateMiniGauges() {
   // FT700 PLUS main canvases
   _spdNorm  += (_spdTgt  - _spdNorm)  * 0.18;
   _gearNorm += (_gearTgt - _gearNorm) * 0.18;
+  _mapNorm  += (_mapTgt  - _mapNorm)  * 0.18;
   drawSpeedGauge(_spdNorm);
   drawGearGauge(_gearNorm);
+  drawMapGauge(_mapNorm);
 
   requestAnimationFrame(animateMiniGauges);
 }
@@ -607,6 +690,38 @@ function updateHUD(d) {
   $tAr.textContent          = d.airTemp      ?? '25.0';
   $motorHealth.textContent  = Math.floor((d.engineHealth ?? 1) * 100) + '%';
   $dataThrottle.textContent = (d.throttlePct ?? 0) + '%';
+
+  // ── Physical device shell indicators ──────────────────────────────────────
+  const _engTempV  = parseFloat(d.oilTemp      ?? 20);
+  const _airTempV  = parseFloat(d.airTemp      ?? 25);
+  const _oilPresV  = parseFloat(d.oilPressure  ?? 1.5);
+  const _fuelPresV = parseFloat(d.fuelPressure ?? 3.0);
+  const _lamV      = parseFloat(d.lambda       ?? '1.00');
+  const _mapV      = parseFloat(d.map          ?? '0.00');
+
+  if ($barEngTemp) {
+    $barEngTemp.style.width = Math.max(0, Math.min(100, (_engTempV - 20) / 1.10)).toFixed(1) + '%';
+    $barEngTemp.classList.toggle('danger', _engTempV > 110);
+  }
+  if ($barOilTemp) {
+    $barOilTemp.style.width = Math.max(0, Math.min(100, (_airTempV - 20) / 0.52)).toFixed(1) + '%';
+    $barOilTemp.classList.toggle('danger', _airTempV > 65);
+  }
+  if ($barOilPres) {
+    $barOilPres.style.width = Math.max(0, Math.min(100, (_oilPresV - 0.8) / 0.057)).toFixed(1) + '%';
+    $barOilPres.classList.toggle('danger', _oilPresV < 1.5);
+  }
+  if ($barFuelPres) {
+    $barFuelPres.style.width = Math.max(0, Math.min(100, (_fuelPresV - 2.5) / 0.02)).toFixed(1) + '%';
+  }
+  if ($lamBarFill) {
+    $lamBarFill.style.width = Math.max(0, Math.min(100, (_lamV - 0.7) / 0.006)).toFixed(1) + '%';
+  }
+  if ($tanquePct) $tanquePct.textContent = Math.round(d.fuel ?? 0) + '%';
+  if ($combMode)  $combMode.textContent  = (d.activeBank === 'B') ? 'Sport' : 'Comum';
+  if ($valLam)    $valLam.textContent    = _curLamStr;
+  if ($valMap)    $valMap.textContent    = (_mapV >= 0 ? '+' : '') + _mapV.toFixed(2);
+  _mapTgt = Math.max(0, Math.min(1, (_mapV + 1.0) / 3.0));
 
   const odo = d.odometer ?? 0;
   const odoInt = Math.floor(odo);
