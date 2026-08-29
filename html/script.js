@@ -38,6 +38,8 @@ const $dataThrottle= document.getElementById('dataThrottle');
 const $alertBar    = document.getElementById('alertBar');
 const $lcdContent  = document.getElementById('lcdContent');
 const $bankBadge   = document.getElementById('bankBadge');
+const $ftEngineDot = document.getElementById('ftEngineDot');
+const $ftLamBottom = document.getElementById('ftLamBottom');
 
 // ── Mini gauge canvas refs (new layout) ──────────────────────────────────────
 const $gaugeFuel = document.getElementById('gaugeFuel');
@@ -51,6 +53,19 @@ const ctxGRpm = $gaugeRpm  ? $gaugeRpm.getContext('2d')  : null;
 const ctxGTmp = $gaugeTemp ? $gaugeTemp.getContext('2d') : null;
 const ctxGOil = $gaugeOil  ? $gaugeOil.getContext('2d')  : null;
 const ctxLam  = $lamGauge  ? $lamGauge.getContext('2d')  : null;
+
+// ── FT700 PLUS main canvas refs ───────────────────────────────────────────────
+const $speedCanvas = document.getElementById('speedCanvas');
+const ctxSpd  = $speedCanvas ? $speedCanvas.getContext('2d') : null;
+const $gearCanvas  = document.getElementById('gearCanvas');
+const ctxGear = $gearCanvas  ? $gearCanvas.getContext('2d')  : null;
+
+let _spdNorm     = 0;
+let _spdTgt      = 0;
+let _gearNorm    = 0;
+let _gearTgt     = 0;
+let _curGearStr  = 'N';
+let _mtGearGreen = false;
 
 const miniGS = {
   fuel: { t: 0,   v: 0   },
@@ -271,6 +286,159 @@ function drawLambdaGauge(norm) {
   ctxLam.fillText('λ', cx, cy + 13);
 }
 
+// ── FT700 PLUS: speed arc gauge (168×168 canvas) ─────────────────────────────
+function drawSpeedGauge(norm) {
+  if (!ctxSpd || !$speedCanvas) return;
+  const w  = $speedCanvas.width;
+  const h  = $speedCanvas.height;
+  const cx = w / 2;
+  const cy = h / 2;
+  const R  = 74;
+  const SA = Math.PI * 0.75;
+  const SW = Math.PI * 1.5;
+  const n  = Math.max(0, Math.min(1, norm));
+
+  ctxSpd.clearRect(0, 0, w, h);
+
+  // Outer decorative ring
+  ctxSpd.beginPath();
+  ctxSpd.arc(cx, cy, R + 5, 0, Math.PI * 2);
+  ctxSpd.strokeStyle = '#0e1020';
+  ctxSpd.lineWidth = 2;
+  ctxSpd.stroke();
+
+  // Track (dark full arc)
+  ctxSpd.beginPath();
+  ctxSpd.arc(cx, cy, R, SA, SA + SW);
+  ctxSpd.strokeStyle = '#111118';
+  ctxSpd.lineWidth = 12;
+  ctxSpd.lineCap = 'round';
+  ctxSpd.stroke();
+
+  // Colored fill arc
+  if (n > 0.005) {
+    const grad = ctxSpd.createLinearGradient(cx - R, cy, cx + R, cy);
+    grad.addColorStop(0,   '#00cc44');
+    grad.addColorStop(0.5, '#ffaa00');
+    grad.addColorStop(0.8, '#ff4400');
+    grad.addColorStop(1,   '#ff1100');
+    ctxSpd.beginPath();
+    ctxSpd.arc(cx, cy, R, SA, SA + SW * n);
+    ctxSpd.strokeStyle = grad;
+    ctxSpd.lineWidth = 12;
+    ctxSpd.lineCap = 'round';
+    ctxSpd.stroke();
+  }
+
+  // Tick marks every 20 km/h up to 280
+  const MAX_SPD = 280;
+  ctxSpd.textAlign    = 'center';
+  ctxSpd.textBaseline = 'middle';
+  for (let spd = 0; spd <= MAX_SPD; spd += 20) {
+    const tn    = spd / MAX_SPD;
+    const ang   = SA + SW * tn;
+    const major = spd % 40 === 0;
+    const inner = R - (major ? 14 : 8);
+    ctxSpd.beginPath();
+    ctxSpd.moveTo(cx + inner * Math.cos(ang), cy + inner * Math.sin(ang));
+    ctxSpd.lineTo(cx + (R - 1) * Math.cos(ang), cy + (R - 1) * Math.sin(ang));
+    ctxSpd.strokeStyle = '#303848';
+    ctxSpd.lineWidth   = major ? 1.5 : 1;
+    ctxSpd.lineCap     = 'butt';
+    ctxSpd.stroke();
+    if (major) {
+      const lr = R - 24;
+      ctxSpd.font      = '8px Orbitron, monospace';
+      ctxSpd.fillStyle = '#282e48';
+      ctxSpd.fillText(String(spd), cx + lr * Math.cos(ang), cy + lr * Math.sin(ang));
+    }
+  }
+
+  // Needle
+  const na   = SA + SW * n;
+  const nLen = R - 16;
+  ctxSpd.beginPath();
+  ctxSpd.moveTo(cx, cy);
+  ctxSpd.lineTo(cx + nLen * Math.cos(na), cy + nLen * Math.sin(na));
+  ctxSpd.strokeStyle = '#ffffff';
+  ctxSpd.lineWidth   = 2;
+  ctxSpd.lineCap     = 'round';
+  ctxSpd.stroke();
+
+  // Center pivot
+  ctxSpd.beginPath();
+  ctxSpd.arc(cx, cy, 5, 0, Math.PI * 2);
+  ctxSpd.fillStyle = '#ff6600';
+  ctxSpd.fill();
+}
+
+// ── FT700 PLUS: gear/RPM gauge (88×88 canvas) ────────────────────────────────
+function drawGearGauge(rpmNorm) {
+  if (!ctxGear || !$gearCanvas) return;
+  const w  = $gearCanvas.width;
+  const h  = $gearCanvas.height;
+  const cx = w / 2;
+  const cy = h / 2;
+  const R  = 36;
+  const SA = Math.PI * 0.75;
+  const SW = Math.PI * 1.5;
+  const n  = Math.max(0, Math.min(1, rpmNorm));
+
+  ctxGear.clearRect(0, 0, w, h);
+
+  // Track
+  ctxGear.beginPath();
+  ctxGear.arc(cx, cy, R, SA, SA + SW);
+  ctxGear.strokeStyle = '#111118';
+  ctxGear.lineWidth   = 7;
+  ctxGear.lineCap     = 'round';
+  ctxGear.stroke();
+
+  // Fill arc (blue → orange → red)
+  if (n > 0.005) {
+    const arcColor = n > 0.85 ? '#ff2200' : n > 0.65 ? '#ff6600' : '#0077ee';
+    ctxGear.beginPath();
+    ctxGear.arc(cx, cy, R, SA, SA + SW * n);
+    ctxGear.strokeStyle = arcColor;
+    ctxGear.lineWidth   = 7;
+    ctxGear.lineCap     = 'round';
+    ctxGear.stroke();
+  }
+
+  // 8 tick marks
+  for (let i = 0; i <= 8; i++) {
+    const ang = SA + (SW * i) / 8;
+    ctxGear.beginPath();
+    ctxGear.moveTo(cx + (R - 4) * Math.cos(ang), cy + (R - 4) * Math.sin(ang));
+    ctxGear.lineTo(cx + (R + 1) * Math.cos(ang), cy + (R + 1) * Math.sin(ang));
+    ctxGear.strokeStyle = '#252838';
+    ctxGear.lineWidth   = 1;
+    ctxGear.lineCap     = 'butt';
+    ctxGear.stroke();
+  }
+
+  // Gear letter (center)
+  ctxGear.textAlign    = 'center';
+  ctxGear.textBaseline = 'middle';
+  ctxGear.font         = 'bold 28px Orbitron, monospace';
+  if (_mtGearGreen) {
+    ctxGear.fillStyle   = '#00e676';
+    ctxGear.shadowColor = 'rgba(0,230,118,0.5)';
+    ctxGear.shadowBlur  = 8;
+  } else {
+    ctxGear.fillStyle  = '#c0c8e0';
+    ctxGear.shadowBlur = 0;
+  }
+  ctxGear.fillText(_curGearStr, cx, cy - 5);
+  ctxGear.shadowBlur = 0;
+
+  // RPM readout (small, below gear)
+  ctxGear.font      = '7px Share Tech Mono, monospace';
+  ctxGear.fillStyle = '#2a3050';
+  const rpmDisp = Math.round(n * 8000);
+  ctxGear.fillText(rpmDisp + ' RPM', cx, cy + 13);
+}
+
 // ── Mini gauge animation loop ─────────────────────────────────────────────────
 const MINI_LERP = 0.14;
 
@@ -288,6 +456,12 @@ function animateMiniGauges() {
   drawMiniGauge(ctxGTmp, 54, 42, s.temp.v, '#ffaa00');
   drawMiniGauge(ctxGOil, 54, 42, s.oil.v,  '#00aaff');
   drawLambdaGauge(s.lam.v);
+
+  // FT700 PLUS main canvases
+  _spdNorm  += (_spdTgt  - _spdNorm)  * 0.18;
+  _gearNorm += (_gearTgt - _gearNorm) * 0.18;
+  drawSpeedGauge(_spdNorm);
+  drawGearGauge(_gearNorm);
 
   requestAnimationFrame(animateMiniGauges);
 }
@@ -470,6 +644,13 @@ function updateHUD(d) {
   miniGS.temp.t = Math.max(0, Math.min(1, (parseFloat(d.oilTemp ?? 20) - 50) / 80));
   miniGS.oil.t  = Math.max(0, Math.min(1, parseFloat(d.oilPressure ?? 0) / 10));
   miniGS.lam.t  = Math.max(0, Math.min(1, (parseFloat(d.lambda ?? '1.0') - 0.7) / 0.6));
+
+  // ── FT700 PLUS canvas targets ────────────────────────────────────────────
+  _spdTgt     = Math.min(1, (d.speed ?? 0) / 280);
+  _gearTgt    = rpmNorm;
+  _curGearStr = String(d.gear ?? 'N');
+  if ($ftEngineDot) $ftEngineDot.classList.toggle('on', (d.rpm ?? 0) > 100);
+  if ($ftLamBottom) $ftLamBottom.textContent = _curLamStr;
 
   updateTurboAudio(d.boostOn, d.spoolPct ?? 0, d.boostPSI ?? 0);
 
@@ -1236,7 +1417,7 @@ function updateMTBadge(active, gear, dir) {
   const dnEl   = document.getElementById('mtDn');
   const $gear  = document.getElementById('gear');
 
-  if (active !== undefined) _mtActive = active;
+  if (active !== undefined) { _mtActive = active; _mtGearGreen = active; }
 
   if (!badge) return;
 
