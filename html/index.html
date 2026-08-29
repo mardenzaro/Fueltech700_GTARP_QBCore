@@ -106,31 +106,29 @@
         </div>
       </div>
 
-      <!-- RIGHT: 3 circular gauges -->
+      <!-- RIGHT: MAP+Lambda (small) | Speed (large) -->
       <div class="ft-gauges">
-        <div class="ft-gauge-top-row">
-          <div class="ft-gwrap">
-            <canvas id="gaugeMap" width="88" height="88"></canvas>
+        <div class="ft-gauge-small-col">
+          <div class="ft-gwrap ft-gwrap-sm">
+            <canvas id="gaugeMap" width="76" height="76"></canvas>
             <div class="ft-gov">
               <span class="ft-gval" id="valMap">0.00</span>
               <span class="ft-gunit">bar</span>
             </div>
           </div>
-          <div class="ft-gwrap">
-            <canvas id="lambdaGauge" width="88" height="88"></canvas>
+          <div class="ft-gwrap ft-gwrap-sm">
+            <canvas id="lambdaGauge" width="76" height="76"></canvas>
             <div class="ft-gov">
               <span class="ft-gval" id="valLam">1.00</span>
               <span class="ft-gunit">λ</span>
             </div>
           </div>
         </div>
-        <div class="ft-gauge-bot-row">
-          <div class="ft-gwrap">
-            <canvas id="speedCanvas" width="88" height="88"></canvas>
-            <div class="ft-gov">
-              <span class="ft-gval ft-gval-spd" id="speed">0</span>
-              <span class="ft-gunit">km/h</span>
-            </div>
+        <div class="ft-gwrap ft-gwrap-spd">
+          <canvas id="speedCanvas" width="154" height="154"></canvas>
+          <div class="ft-gov ft-gov-spd">
+            <span class="ft-gval ft-gval-spd" id="speed">0</span>
+            <span class="ft-gunit ft-gunit-spd">km/h</span>
           </div>
         </div>
       </div>
@@ -241,6 +239,6 @@
   </div>
 </div>
 
-<script src="script.js?v=11"></script>
+<script src="script.js?v=12"></script>
 </body>
 </html>

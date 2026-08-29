@@ -385,14 +385,14 @@ function drawSpeedGauge(norm) {
   // Outer decorative ring
   ctxSpd.beginPath();
   ctxSpd.arc(cx, cy, R + 5, 0, Math.PI * 2);
-  ctxSpd.strokeStyle = '#0e1020';
+  ctxSpd.strokeStyle = '#252a40';
   ctxSpd.lineWidth = 2;
   ctxSpd.stroke();
 
-  // Track (dark full arc)
+  // Track (dark full arc — visible against background)
   ctxSpd.beginPath();
   ctxSpd.arc(cx, cy, R, SA, SA + SW);
-  ctxSpd.strokeStyle = '#111118';
+  ctxSpd.strokeStyle = '#1c2038';
   ctxSpd.lineWidth = 12;
   ctxSpd.lineCap = 'round';
   ctxSpd.stroke();
@@ -424,14 +424,14 @@ function drawSpeedGauge(norm) {
     ctxSpd.beginPath();
     ctxSpd.moveTo(cx + inner * Math.cos(ang), cy + inner * Math.sin(ang));
     ctxSpd.lineTo(cx + (R - 1) * Math.cos(ang), cy + (R - 1) * Math.sin(ang));
-    ctxSpd.strokeStyle = '#303848';
+    ctxSpd.strokeStyle = '#3d4a62';
     ctxSpd.lineWidth   = major ? 1.5 : 1;
     ctxSpd.lineCap     = 'butt';
     ctxSpd.stroke();
     if (major) {
       const lr = R - 24;
       ctxSpd.font      = '8px Orbitron, monospace';
-      ctxSpd.fillStyle = '#282e48';
+      ctxSpd.fillStyle = '#4a5570';
       ctxSpd.fillText(String(spd), cx + lr * Math.cos(ang), cy + lr * Math.sin(ang));
     }
   }

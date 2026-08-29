@@ -21,7 +21,7 @@ body {
 }
 
 .ft-shell {
-  width: 468px;
+  width: 500px;
   background: linear-gradient(170deg, #1c1e26 0%, #111318 35%, #0d0e14 100%);
   border: 2px solid #2c3040;
   border-radius: 14px;
@@ -286,33 +286,31 @@ body {
   color: #505878;
 }
 
-/* RIGHT: 3 circular gauges */
+/* RIGHT: MAP+Lambda (small) | Speed (large) */
 .ft-gauges {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
   justify-content: center;
-  gap: 5px;
+  gap: 8px;
   flex: 1;
 }
 
-.ft-gauge-top-row {
+.ft-gauge-small-col {
   display: flex;
-  gap: 8px;
-  justify-content: center;
-}
-
-.ft-gauge-bot-row {
-  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  align-items: center;
   justify-content: center;
 }
 
 .ft-gwrap {
   position: relative;
-  width: 88px;
-  height: 88px;
   flex-shrink: 0;
 }
+
+.ft-gwrap-sm  { width: 76px;  height: 76px; }
+.ft-gwrap-spd { width: 154px; height: 154px; }
 
 .ft-gwrap canvas { display: block; }
 
@@ -324,12 +322,14 @@ body {
   align-items: center;
   justify-content: center;
   pointer-events: none;
-  padding-top: 10px;
+  padding-top: 8px;
 }
+
+.ft-gov-spd { padding-top: 0; }
 
 .ft-gval {
   font-family: 'Orbitron', monospace;
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 900;
   color: #ffffff;
   line-height: 1;
@@ -337,16 +337,22 @@ body {
 }
 
 .ft-gval-spd {
-  font-size: 20px;
-  letter-spacing: -1px;
+  font-size: 34px;
+  letter-spacing: -2px;
 }
 
 .ft-gunit {
   font-family: 'Share Tech Mono', monospace;
   font-size: 7px;
-  color: #383e58;
+  color: #4a5270;
   letter-spacing: 1px;
   margin-top: 2px;
+}
+
+.ft-gunit-spd {
+  font-size: 10px;
+  color: #4a5270;
+  margin-top: 3px;
 }
 
 /* ── BOTTOM BAR ── */
