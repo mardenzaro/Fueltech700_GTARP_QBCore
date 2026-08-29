@@ -74,31 +74,10 @@ local ftMaxSpeed      = nil   -- valor ativo de SetVehicleMaxSpeed em m/s (aplic
 local ftPowerMult     = 1.0   -- último pMult calculado (aplicado no handling thread todo frame)
 local ftCleanupFrames = 0     -- frames restantes para restaurar drag após /ft off
 
--- variáveis de debug para o LIVE log
-local dbgThrottle = 0
-local dbgPMult    = 1.0
-
-
 -- ── O2 Closed Loop ────────────────────────────────────────────────────────────
 local closedLoopActive = false
 local closedLoopRate   = 1   -- unidades por ciclo de 500 ms
 local clTimer          = 0
-
--- ── Debug Log ────────────────────────────────────────────────────────────────
-local ftLog       = true
-local logTimer    = 0
-local ftLogBuffer = {}
-local logT0       = GetGameTimer()
-
-local function log(tag, msg)
-    local ts   = string.format("[%06.1fs]", (GetGameTimer() - logT0) / 1000.0)
-    local line = ts .. ' ' .. tag .. ': ' .. msg
-    ftLogBuffer[#ftLogBuffer + 1] = line
-    TriggerServerEvent('fueltech:printLog', line)   -- aparece no console do servidor em tempo real
-    if ftLog then
-        TriggerEvent('chat:addMessage', { args = { '~b~[FT]~w~ ' .. tag, msg } })
-    end
-end
 
 -- ── Runtime ───────────────────────────────────────────────────────────────────
 local isInVehicle = false
@@ -380,15 +359,6 @@ RegisterCommand('ft', function(source, args)
         TriggerEvent('chat:addMessage', { args = {'FT700',
             '~g~FuelTech ON~w~ | base=' .. flatBefore .. ' km/h | ' .. boostStr
         } })
-        log('FT ON', string.format(
-            'base=%.2f | baseDrag=%.4f | ftMax=%.2fm/s(%.0fkm/h) | ftDrag=%.4f | boost=%s %dPSI',
-            baseMaxFlatVel or 0, baseDragCoeff or 0,
-            ftMaxSpeed or 0, (ftMaxSpeed or 0) * 3.6,
-            ftDragCoeff or 0,
-            tostring(boostActive), boostTargetPSI
-        ))
-        logTimer = 0
-
     elseif sub == 'off' then
         ftEnabled    = false
         manualActive = false
@@ -412,14 +382,6 @@ RegisterCommand('ft', function(source, args)
             ModifyVehicleTopSpeed(veh, 1.0)
             SetVehicleCheatPowerIncrease(veh, 1.0)
             ftCleanupFrames = 120  -- cleanup thread reforça por ~2s (GTA pode reverter)
-            local realDrag = GetVehicleHandlingFloat(veh, 'CHandlingData', 'fInitialDragCoeff')
-            local realFlat = GetVehicleHandlingFloat(veh, 'CHandlingData', 'fInitialDriveMaxFlatVel')
-            log('FT OFF', string.format(
-                'realDrag=%.4f(base=%.4f) | realFlat=%.2f | speed=%.0fkm/h | gear=%d/%d',
-                realDrag, baseDragCoeff or 0, realFlat,
-                GetEntitySpeed(veh) * 3.6,
-                GetVehicleCurrentGear(veh), GetVehicleHighGear(veh)
-            ))
         end
         TriggerEvent('chat:addMessage', { args = {'FT700', '~r~FuelTech FT700 desativado.'} })
 
@@ -462,78 +424,8 @@ RegisterCommand('ft', function(source, args)
             }
         })
 
-    elseif sub == 'log' then
-        ftLog = not ftLog
-        TriggerEvent('chat:addMessage', { args = {'FT700', 'Logs: ' .. (ftLog and '~g~ON' or '~r~OFF')} })
-
-    elseif sub == 'savelog' then
-        TriggerServerEvent('fueltech:saveLog')
-        TriggerEvent('chat:addMessage', { args = {'FT700', '~g~Salvando ft_log.txt no servidor...'} })
-        ftLogBuffer = {}
-        logT0 = GetGameTimer()
-
-    elseif sub == 'clearlog' then
-        ftLogBuffer = {}
-        logT0 = GetGameTimer()
-        TriggerEvent('chat:addMessage', { args = {'FT700', 'Buffer de log limpo.'} })
-
-    elseif sub == 'debug' then
-        local realDrag = veh ~= 0 and GetVehicleHandlingFloat(veh, 'CHandlingData', 'fInitialDragCoeff') or -1
-        local realFlat = veh ~= 0 and GetVehicleHandlingFloat(veh, 'CHandlingData', 'fInitialDriveMaxFlatVel') or -1
-        local gear     = veh ~= 0 and GetVehicleCurrentGear(veh) or -1
-        local topGear  = veh ~= 0 and GetVehicleHighGear(veh) or -1
-        TriggerEvent('chat:addMessage', { args = {'FT DBG',
-            'base=' .. tostring(baseMaxFlatVel) ..
-            ' baseDrag=' .. tostring(baseDragCoeff) ..
-            ' ftMax=' .. tostring(ftMaxSpeed) ..
-            ' ftDrag=' .. tostring(ftDragCoeff)
-        } })
-        TriggerEvent('chat:addMessage', { args = {'FT DBG',
-            'realDrag=' .. string.format("%.2f", realDrag) ..
-            ' realFlat=' .. string.format("%.2f", realFlat) ..
-            ' gear=' .. gear .. '/' .. topGear ..
-            ' ftOn=' .. tostring(ftEnabled)
-        } })
-    elseif sub == 'entities' then
-        -- Lista entidades próximas com handle + status de rede
-        -- Use para identificar qual entidade gera "NETWORK_GET_NETWORK_ID_FROM_ENTITY: no such entity (script ID XXXXX)"
-        -- O número no warning é o handle da entidade (coluna handle= abaixo)
-        local ped = PlayerPedId()
-        local pos = GetEntityCoords(ped)
-        local count = 0
-
-        for _, v in ipairs(GetGamePool('CVehicle')) do
-            local dist = #(GetEntityCoords(v) - pos)
-            if dist < 150.0 then
-                count = count + 1
-                local netOk  = NetworkGetEntityIsNetworked(v)
-                local model  = GetEntityModel(v)
-                local plate  = GetVehicleNumberPlateText(v)
-                local flatV  = GetVehicleHandlingFloat(v, 'CHandlingData', 'fInitialDriveMaxFlatVel')
-                log('ENT-VEH', string.format(
-                    'handle=%d | model=%d | plate=%s | net=%s | dist=%.0fm | flat=%.1f',
-                    v, model, plate, tostring(netOk), dist, flatV
-                ))
-            end
-        end
-
-        for _, o in ipairs(GetGamePool('CObject')) do
-            local dist = #(GetEntityCoords(o) - pos)
-            if dist < 60.0 then
-                count = count + 1
-                local netOk = NetworkGetEntityIsNetworked(o)
-                local model = GetEntityModel(o)
-                log('ENT-OBJ', string.format(
-                    'handle=%d | model=%d | net=%s | dist=%.0fm',
-                    o, model, tostring(netOk), dist
-                ))
-            end
-        end
-
-        TriggerEvent('chat:addMessage', { args = {'FT ENT', count .. ' entidades — veja console do servidor'} })
-
     else
-        TriggerEvent('chat:addMessage', { args = {'FT700', 'Uso: /ft on | /ft off | /ft menu | /ft debug | /ft entities | /ft log | /ft savelog | /ft clearlog'} })
+        TriggerEvent('chat:addMessage', { args = {'FT700', 'Uso: /ft on | /ft off | /ft menu'} })
     end
 end, false)
 
@@ -673,10 +565,6 @@ CreateThread(function()
                 topSpeedDirty   = true
                 StopGameplayCamShaking(true)
                 if ftEnabled then SendNUIMessage({ show = true }) end
-                log('ENTRY', string.format(
-                    'model=%s | flatVel=%.2f | drag=%.4f',
-                    GetEntityModel(vehicle), baseMaxFlatVel, baseDragCoeff
-                ))
                 -- Carrega ECU do banco — bloqueia acelerador até receber resposta
                 ecuLoading = true
                 TriggerEvent('chat:addMessage', { args = {'FT700', '~y~Carregando ECU...'} })
@@ -694,24 +582,6 @@ CreateThread(function()
 
             if ftEnabled then
                 applyTopSpeed(vehicle)
-                -- Log periódico a cada 2s quando FT ativo
-                logTimer = logTimer + 100
-                if logTimer >= 2000 then
-                    logTimer = 0
-                    local rDrag = GetVehicleHandlingFloat(vehicle, 'CHandlingData', 'fInitialDragCoeff')
-                    local rFlat = GetVehicleHandlingFloat(vehicle, 'CHandlingData', 'fInitialDriveMaxFlatVel')
-                    local spd   = GetEntitySpeed(vehicle) * 3.6
-                    local g     = GetVehicleCurrentGear(vehicle)
-                    local tg    = GetVehicleHighGear(vehicle)
-                    log('LIVE', string.format(
-                        'spd=%.0fkm/h | gear=%d/%d | thr=%.0f%% | pwr=%.2fx | flat=%.1f(tgt=%.1f) | drag=%.4f(tgt=%.4f) | eCap=%.0fkm/h',
-                        spd, g, tg, dbgThrottle * 100, dbgPMult,
-                        rFlat, ftFlatVel or 0,
-                        rDrag, ftDragCoeff or 0, (ftFlatVel or 0) * 1.3
-                    ))
-                end
-            else
-                logTimer = 0
             end
 
             local speed        = GetEntitySpeed(vehicle) * 3.6
@@ -852,10 +722,6 @@ CreateThread(function()
             -- ── Traction control ──────────────────────────────────────────────
             local isSpinning = throttle > 0.8 and speed < (tractionSlip * 0.4) and rpm > 0.65 and gear <= 2
             if tractionEnabled and isSpinning then pMult = pMult * 0.3 end
-
-            -- captura para debug
-            dbgThrottle = throttle
-            dbgPMult    = pMult
 
             -- ── Rev Limiter / 2-Step / Cut-Off / Normal ──────────────────────
             if rpmVal >= revLimit and throttle > 0.1 and not isTwoStep then

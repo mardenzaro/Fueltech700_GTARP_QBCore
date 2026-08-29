@@ -51,21 +51,3 @@ RegisterNetEvent('fueltech:saveECU', function(vehicleModel, settingsJson)
     )
 end)
 
--- ── Debug Log — console em tempo real + arquivo ───────────────────────────────
-local ftServerBuffer = {}
-
-RegisterNetEvent('fueltech:printLog', function(line)
-    ftServerBuffer[#ftServerBuffer + 1] = line
-    print('[FT700] ' .. line)
-end)
-
-RegisterNetEvent('fueltech:saveLog', function()
-    if #ftServerBuffer == 0 then
-        print('[FT700] Nenhum log para salvar.')
-        return
-    end
-    local content = table.concat(ftServerBuffer, '\n') .. '\n'
-    SaveResourceFile(GetCurrentResourceName(), 'ft_log.txt', content, -1)
-    print(string.format('[FT700] ft_log.txt salvo — %d linhas', #ftServerBuffer))
-    ftServerBuffer = {}
-end)
